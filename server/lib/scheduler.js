@@ -41,9 +41,15 @@ var Scheduler = function () {
 
             job = new CronJob(adjustedTime, function () {
                 /* runs once at the specified date. */
-                teetime.reserve(reservation);
-                // search(reservation);
-              }, function () {
+                teetime.reserve(reservation)
+                  .then(function (result) {
+                      console.log(result);
+                    },
+                    function (err) {
+                      console.log(err);
+                    });
+              },
+              function () {
                 /* This function is executed when the job stops */
               },
               true, /* Start the job right now */
@@ -72,9 +78,15 @@ var Scheduler = function () {
 
       job = new CronJob(adjustedTime, function () {
           /* runs once at the specified date. */
-          teetime.search(reservation);
-          // search(reservation);
-        }, function () {
+          teetime.search(reservation)
+            .then(function (result) {
+                console.log(result);
+              },
+              function (err) {
+                console.log(err);
+              });
+        },
+        function () {
           /* This function is executed when the job stops */
         },
         true, /* Start the job right now */

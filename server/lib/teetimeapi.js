@@ -14,32 +14,43 @@ var TeeTimeAPI = function () {
   this.search = function (reservation) {
     console.log("search fired at " + new Date().toString());
 
-    var url = searchUrl;
-    var request = new JsonRequest(url);
+    return new Promise(function (resolve, reject) {
+      var url = searchUrl;
+      var request = new JsonRequest(url);
 
-    request.post(reservation.json(), function (json) {
-      if (json) {
-        console.log(JSON.stringify(json));
-      } else {
-        console.log("Error searching for tee times!");
-      }
+      request.post(reservation.json(), function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+          resolve(json);
+        } else {
+          var str = "Error searching for tee times!";
+          console.log(str);
+          reject(str);
+        }
+      });
     });
-
   };
 
   this.reserve = function (reservation) {
     console.log("reserve fired at " + new Date().toString());
 
-    var url = reserveUrl;
-    var request = new JsonRequest(url);
+    return new Promise(function (resolve, reject) {
 
-    request.post(reservation.json(), function (json) {
-      if (json) {
-        console.log(JSON.stringify(json));
-      } else {
-        console.log("Error reserving tee times!");
-      }
+      var url = reserveUrl;
+      var request = new JsonRequest(url);
+
+      request.post(reservation.json(), function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+          resolve(json);
+        } else {
+          var str = "Error reserving tee times!";
+          console.log(str);
+          reject(str);
+        }
+      });
     });
+
 
   };
 
