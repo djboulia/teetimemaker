@@ -5,7 +5,7 @@ var MemberAPI = require('../lib/memberapi.js');
 var logger = require('../lib/logger.js');
 var app = require('../../server/server');
 
-var memberRecord = function (username, password, name, id) {
+var newMemberRecord = function (username, password, name, id) {
   var encryptedPassword = Password.encrypt(password);
   var str = "username = " + username + ", password = " + encryptedPassword;
 
@@ -23,6 +23,32 @@ var memberRecord = function (username, password, name, id) {
   record.data.id = id;
 
   return record;
+};
+
+var updateMemberRecord = function (record, username, password, name, id) {
+  var encryptedPassword = Password.encrypt(password);
+  var str = "username = " + username + ", password = " + encryptedPassword;
+
+  console.log(str);
+
+  record.username = username;
+  record.password = password;
+
+  record.data.username = username;
+  record.data.password = encryptedPassword;
+  record.data.name = name;
+  record.data.id = id;
+
+  return record;
+};
+
+var userCredentialsFromRecord = function (record) {
+  var obj = {};
+
+  obj.username = record.data.username;
+  obj.password = Password.decrypt(record.data.password);
+
+  return obj;
 };
 
 var users = {};
@@ -119,6 +145,30 @@ module.exports = function (Member) {
     });
   };
 
+  Member.Promise.update = function (record) {
+    return new Promise(function (resolve, reject) {
+
+      var User = app.models.User;
+
+      User.replaceOrCreate(record, function (err, record) {
+        if (!err && record) {
+
+          resolve(record);
+
+        } else {
+          if (err) {
+            var str = "Error!" + JSON.stringify(err);
+            reject(str);
+          } else {
+            var str = "Could not update Member!";
+            reject(str);
+          }
+        }
+      });
+
+    });
+  };
+
 
   Member.remoteMethod(
     'createMember', {
@@ -156,7 +206,7 @@ module.exports = function (Member) {
         path: '/',
         verb: 'put',
       },
-      description: 'Update a PWCC credentials for a user',
+      description: 'Update a PWCC credentials (e.g. password change) for a user',
 
       accepts: [{
           arg: 'username',
@@ -169,6 +219,21 @@ module.exports = function (Member) {
           type: 'string',
           required: true,
           description: 'Password for PWCC site'
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: function (ctx) {
+            var req = ctx && ctx.req;
+            var accessToken = req && req.accessToken;
+            var tokenID = accessToken ? accessToken.id : undefined;
+
+            console.log("tokenID " + JSON.stringify(tokenID));
+            console.log("accessToken " + JSON.stringify(accessToken));
+            return (accessToken) ? accessToken.userId : undefined;
+          },
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
         }
       ],
 
@@ -255,7 +320,7 @@ module.exports = function (Member) {
 
             console.log("tokenID " + JSON.stringify(tokenID));
             console.log("accessToken " + JSON.stringify(accessToken));
-            return accessToken.userId;
+            return (accessToken) ? accessToken.userId : undefined;
           },
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
@@ -274,26 +339,16 @@ module.exports = function (Member) {
 
     console.log("member.createMember");
 
-    // check the db to see if we have a record for this username
-    // --> reject if so
-    // then go get the name/id for this logged in user
-    // (validates login, gives us the name/id info
-    // --> reject if fails
-    // encrypt the password
-    // add a record to our backend database
-    // return success
-
     Member.Promise.findByUsername(username)
       .then(function (record) {
           if (record == null) {
 
-            // go look for additiona info
+            // no existing user record, now go look for additiona info
             var member = new MemberAPI();
             member.info(username, password)
               .then(function (result) {
-                  // add a new etnry to the database
-
-                  var record = memberRecord(username, password, result.name, result.id);
+                  // add a new entry to the database
+                  var record = newMemberRecord(username, password, result.name, result.id);
 
                   Member.Promise.create(record)
                     .then(function (record) {
@@ -316,8 +371,7 @@ module.exports = function (Member) {
         });
   };
 
-  Member.updateMember = function (username, password, cb) {
-
+  Member.updateMember = function (username, password, id, cb) {
     // check the db to see if we have a record for this username
     // --> reject if no existing record exists
     // then go get the name/id for this logged in user
@@ -327,13 +381,35 @@ module.exports = function (Member) {
     // update the record in our backend database
     // return success
 
-    var encryptedPassword = Password.encrypt(password);
-    var str = username + ", password = " + encryptedPassword;
+    var User = app.models.User;
 
-    console.log("password encrypted: " + encryptedPassword + " decrypted: " + Password.decrypt(encryptedPassword));
+    Member.Promise.findById(id)
+      .then(function (record) {
+          console.log("Found user! " + JSON.stringify(record));
 
-    cb("implement me!");
+          // validate these credentials
+          var member = new MemberAPI();
+          member.info(username, password)
+            .then(function (result) {
+                updateMemberRecord(record, username, password, result.name, result.id);
 
+                // update the backend database
+                Member.Promise.update(record)
+                  .then(function (record) {
+                      cb(null, record);
+                    },
+                    function (err) {
+                      cb(err);
+                    });
+              },
+              function (err) {
+                cb("Couldn't validate user credentials for " + username);
+              });
+        },
+        function (err) {
+          var str = "Error!" + JSON.stringify(err);
+          cb(str);
+        });
   };
 
   Member.login = function (username, password, cb) {
@@ -350,11 +426,9 @@ module.exports = function (Member) {
       .then(function (record) {
           if (record != null) {
 
-            var db = {};
-            db.username = record.data.username;
-            db.password = Password.decrypt(record.data.password);
+            var user = userCredentialsFromRecord(record);
 
-            if (password != db.password) {
+            if (password != user.password) {
               cb("Invalid login credentials");
               return;
             }
@@ -403,18 +477,17 @@ module.exports = function (Member) {
     Member.Promise.findById(id)
       .then(function (record) {
           console.log("Got a response! " + JSON.stringify(record));
-          var db = {};
-          db.usernam = record.data.username;
-          db.password = Password.decrypt(record.data.password);
+
+          var user = userCredentialsFromRecord(record);
 
           // go look for additiona info
           var member = new MemberAPI();
-          member.search(db.username, db.password, lastname)
+          member.search(user.username, user.password, lastname)
             .then(function (result) {
                 cb(null, result);
               },
               function (err) {
-                cb("Couldn't search for " + lastname);
+                cb(err);
               });
         },
         function (err) {

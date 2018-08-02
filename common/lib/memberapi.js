@@ -41,7 +41,7 @@ var MemberAPI = function () {
     return new Promise(function (resolve, reject) {
       console.log("member search fired at " + new Date().toString());
 
-      var url = searchUrl;
+      var url = memberSearchUrl;
       var request = new JsonRequest(url);
 
       var json = {
@@ -55,7 +55,7 @@ var MemberAPI = function () {
           console.log(JSON.stringify(json));
           resolve(json);
         } else {
-          var str = "Error searching for member!";
+          var str = "Error searching for member " + lastName + "!";
           console.log(str);
           reject(str);
         }

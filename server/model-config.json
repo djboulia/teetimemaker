@@ -15,7 +15,7 @@
   },
   "User": {
     "dataSource": "teetime",
-    "public": true
+    "public": false
   },
   "AccessToken": {
     "dataSource": "db",
@@ -38,7 +38,7 @@
   },
   "Reservation": {
     "dataSource": "teetime",
-    "public": false,
+    "public": true,
     "$promise": {},
     "$resolved": true
   },
