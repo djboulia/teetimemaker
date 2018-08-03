@@ -38,12 +38,18 @@
   },
   "Reservation": {
     "dataSource": "teetime",
-    "public": true,
+    "public": false,
     "$promise": {},
     "$resolved": true
   },
   "Member": {
     "dataSource": "teetime",
+    "public": true,
+    "$promise": {},
+    "$resolved": true
+  },
+  "Scheduler": {
+    "dataSource": false,
     "public": true,
     "$promise": {},
     "$resolved": true

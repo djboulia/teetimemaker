@@ -3,22 +3,36 @@
 // the service does the actual booking on the golf club web site
 //
 var JsonRequest = require('../../common/lib/jsonrequest.js');
+var MockJsonRequest = require('../../common/lib/mockjsonrequest.js');
 
 var BASE_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/teetime/";
 
+var getTestMode = function() {
+  var app = require('../../server/server');
+
+  var mockTeeTimes = app.get('mockTeeTimes');
+  if (mockTeeTimes) {
+    console.log("test mode: tee time calls will NOT actually book a tee time");
+  }
+
+  return mockTeeTimes;
+};
+
 var TeeTimeAPI = function () {
+
+  var testMode = getTestMode();
 
   var searchUrl = BASE_URL + "search";
   var reserveUrl = BASE_URL + "reserve";
 
-  this.search = function (reservation) {
+  this.search = function (teetime) {
     console.log("search fired at " + new Date().toString());
 
     return new Promise(function (resolve, reject) {
       var url = searchUrl;
-      var request = new JsonRequest(url);
+      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
 
-      request.post(reservation.json(), function (json) {
+      request.post(teetime.json(), function (json) {
         if (json) {
           console.log(JSON.stringify(json));
           resolve(json);
@@ -31,15 +45,15 @@ var TeeTimeAPI = function () {
     });
   };
 
-  this.reserve = function (reservation) {
+  this.reserve = function (teetime) {
     console.log("reserve fired at " + new Date().toString());
 
     return new Promise(function (resolve, reject) {
 
       var url = reserveUrl;
-      var request = new JsonRequest(url);
+      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
 
-      request.post(reservation.json(), function (json) {
+      request.post(teetime.json(), function (json) {
         if (json) {
           console.log(JSON.stringify(json));
           resolve(json);

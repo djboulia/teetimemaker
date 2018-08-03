@@ -42,11 +42,18 @@ var updateMemberRecord = function (record, username, password, name, id) {
   return record;
 };
 
+//
+// extract the relevant PWCC credentials from the database
+// record.  this decrypts the password and only returns the
+// stuff relevant for PWCC login
+//
 var userCredentialsFromRecord = function (record) {
   var obj = {};
 
   obj.username = record.data.username;
   obj.password = Password.decrypt(record.data.password);
+  obj.name = record.data.name;
+  obj.id = record.data.id;
 
   return obj;
 };
@@ -114,6 +121,18 @@ module.exports = function (Member) {
           reject(err);
         }
       });
+    });
+  };
+
+  Member.Promise.findCredentialsById = function (id) {
+    return new Promise(function (resolve, reject) {
+      Member.Promise.findById(id)
+        .then(function (record) {
+            resolve(userCredentialsFromRecord(record));
+          },
+          function (err) {
+            reject(err);
+          });
     });
   };
 

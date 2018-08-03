@@ -5,7 +5,7 @@
 // 
 var moment = require('moment-timezone');
 
-var Reservation = function(userid, password, time, courses, golfers) {
+var TeeTime = function(userid, password, time, courses, golfers) {
 
   // all tee times come in as an Eastern time zone.  use moment-timezone
   // to parse the time appropriately regardless of the timezone of the
@@ -50,10 +50,18 @@ var Reservation = function(userid, password, time, courses, golfers) {
     };
   }
 
+  //
+  // return a string representation of the object with password masked
+  //
   this.toString = function() {
-    return JSON.stringify(this.json());
+    var json = this.json();
+    var passwordMask = "###################################";
+
+    json.password = passwordMask.substr(0, json.password.length);
+
+    return JSON.stringify(json);
   }
 
 };
 
-module.exports = Reservation;
+module.exports = TeeTime;
