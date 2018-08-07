@@ -7,156 +7,132 @@
 
 var CronJob = require('cron').CronJob;
 
-var ClockSync = require('../lib/clocksync.js');
-var TeeTimeAPI = require('../lib/teetimeapi.js');
 var TeeTime = require('../lib/teetime.js');
 
 module.exports = function (Scheduler) {
 
-  var job;
-  var teetimeService = new TeeTimeAPI();
   var app = require('../../server/server');
+
+  var jobs = [];
+
+  //
+  // run a job at the specified date
+  //
+  var addJob = function (time, id) {
+    var job = new CronJob(time, function () {
+        var Reservation = app.models.Reservation.Promise;
+
+        Reservation.reserve(id)
+          .then(function (result) {
+              console.log(result);
+            },
+            function (err) {
+              console.log(err);
+            });
+      },
+      function () {
+        /* This function is executed when the job stops */
+      },
+      true, /* Start the job right now */
+      'America/New_York' /* Time zone of this job. */
+    );
+
+    job.start();
+
+    // keep track of started jobs so we can find them later
+    // if changes are made
+    jobs[id] = job;
+  };
 
   //
   // make the teetime at the appropriate time
   //
-  Scheduler.add = function (teetime) {
-    console.log("add: teetime: " + teetime.toString());
+  Scheduler.add = function (record) {
 
     return new Promise(function (resolve, reject) {
-      ClockSync.getClockDelta()
-        .then(function (delta) {
-            console.log("delta: " + delta + "ms");
-            console.log("tee time reservation: " + teetime.getDate().toString());
 
-            var now = new Date().getTime();
-            var reservedTime = teetime.getDate().getTime();
+      var id = record.id;
+      var teetime = new TeeTime(record);
+      var openTime = teetime.getTeeSheetOpenDate();
 
-            if (reservedTime < now) {
-              var str = "tee time occurs in the past, not scheduling reservation " +
-                teetime.getDate().toString();
-              reject(str);
-              return;
-            }
+      console.log("tee time reservation: " + teetime.getDate().toString());
 
-            var openTime = teetime.getTeeSheetOpenTime();
-            var adjustedTime = new Date(openTime.getTime() + delta);
-            console.log("setting job for: " + adjustedTime.toString());
+      console.log("setting job for: " + openTime.toString());
 
-            job = new CronJob(adjustedTime, function () {
-                /* runs once at the specified date. */
-                teetimeService.reserve(teetime)
-                  .then(function (result) {
-                      console.log(result);
-                    },
-                    function (err) {
-                      console.log(err);
-                    });
-              },
-              function () {
-                /* This function is executed when the job stops */
-              },
-              true, /* Start the job right now */
-              'America/New_York' /* Time zone of this job. */
-            );
+      if (!teetime.inTheFuture()) {
+        var str = "Tee time occurs in the past, not processing " + teetime.getDate().toString();
+        console.log(str);
+        resolve(str);
+      } else if (teetime.isTeeSheetOpen()) {
+        // make the reservation right now
+        var str = "Tee sheet is open, reserving " + teetime.getDate().toString() + " now.";
+        console.log(str);
 
-            job.start();
-            resolve(adjustedTime);
-          },
-          function (err) {
-            reject(err);
-          });
+        // set the job for 2 secs in the future
+        var now = new Date().getTime();
+        var adjustedTime = new Date(now + 2000);
+
+        addJob(adjustedTime, id);
+
+        resolve(str);
+      } else {
+        var str = "Scheduling reservation on " + openTime.toString();
+        console.log(str);
+
+        addJob(openTime, id);
+
+        resolve(str);
+      }
     });
 
   };
 
-  //
-  // immediately try to make this reservation
-  //
-  Scheduler.now = function (teetime) {
-    console.log("now: teetime: " + teetime.toString());
-
-    return new Promise(function (resolve, reject) {
-      var now = new Date().getTime();
-      var adjustedTime = new Date(now + 2000); // now plus 2 secs
-
-      job = new CronJob(adjustedTime, function () {
-          /* runs once at the specified date. */
-          teetimeService.search(teetime)
-            .then(function (result) {
-                console.log(result);
-              },
-              function (err) {
-                console.log(err);
-              });
-        },
-        function () {
-          /* This function is executed when the job stops */
-        },
-        true, /* Start the job right now */
-        'America/New_York' /* Time zone of this job. */
-      );
-
-      job.start();
-    });
-
-  };
 
   //
   // when the server is first started, we look in the database
-  // for reservation records and load them all into the scheduler
+  // for existing reservation records and load them all into the scheduler
   //
   Scheduler.init = function () {
 
     return new Promise(function (resolve, reject) {
       var Reservation = app.models.Reservation.Promise;
 
-      Reservation.find()
+      // filter only unprocessed records
+      var options = {
+        where: {
+          processed: {
+            exists : false
+          }
+        }
+      };
+
+      Reservation.findWithOptions(options)
         .then(function (records) {
+          var promises = [];
 
           console.log("found " + records.length + " records!");
 
+          if (records.length==0) {
+            resolve([]);
+          }
+
           for (var i = 0; i < records.length; i++) {
-            var record = records[i].data;
+            var record = records[i];
 
-            var Member = app.models.Member.Promise;
-            var id = record.member;
+            console.log("record: " + JSON.stringify(record));
 
-            Member.findCredentialsById(id)
-              .then(function (user) {
-                  var userid = user.username;
-                  var password = user.password;
-                  var time = record.time;
-                  var courses = record.courses;
+            // add it as a future job
+            promises.push(Scheduler.add(record));
 
-                  if (record.golfers.length > 3) {
-                    reject("A maximum of 3 additional golfers allowed.  Reservation not made.");
-                  } else {
-
-                    // logged in user has to be first tee time entry
-                    var golfers = record.golfers;
-                    golfers.unshift({"name" : user.name, "id" : user.id});
-
-                    var teetime = new TeeTime(userid, password,
-                      time, courses, golfers);
-
-                    // Scheduler.now(teetime)
-                    Scheduler.add(teetime)
-                      .then(function (time) {
-                        console.log("tee time reservation will be made on " + time.toString());
-                        resolve(time);
-                      }, function (err) {
-                        console.log(err);
-                        reject(err);
-                      });
-                  }
-
+            // wait for all of the promises to finish
+            Promise.all(promises)
+              .then(function (results) {
+                  resolve(results);
                 },
                 function (err) {
+                  console.log("error! " + err);
                   reject(err);
-                })
-
-
+                });
           }
 
         }, function (err) {
@@ -232,8 +208,8 @@ module.exports = function (Scheduler) {
     console.log("Scheduler.apiCreate with id " + id);
 
     var record = {
-      data : {
-        member : id,
+      data: {
+        member: id,
         time: time,
         courses: courses,
         golfers: golfers
@@ -244,7 +220,13 @@ module.exports = function (Scheduler) {
 
     Reservation.create(record)
       .then(function (result) {
-          cb(null, result);
+          Scheduler.add(result)
+            .then(function (str) {
+                cb(null, str);
+              },
+              function (err) {
+                cb(err);
+              });
         },
         function (err) {
           cb(err);

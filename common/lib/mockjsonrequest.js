@@ -5,16 +5,12 @@
 //
 var request = require('request');
 
-var TEETIME_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/teetime/";
-
 var mockRequest = function (url, data, cb) {
   process.nextTick(function () {
-    var search = TEETIME_URL + 'search';
-    var reserve = TEETIME_URL + 'reserve';
 
     var json = {};
 
-    if (url == search) {
+    if (url.endsWith('search')) {
       // fake up a reserve result
       console.log("MOCK SEARCH call to " + url);
 
@@ -24,7 +20,7 @@ var mockRequest = function (url, data, cb) {
         "Thu Aug 02 14:10:00 UTC 2018 78539893 Meadows [Available|Available|Available|Available]"
       ];
 
-    } else if (url == reserve) {
+    } else if (url.endsWith('reserve')) {
       // fake up a reserve result
       console.log("MOCK RESERVE call to " + url);
 

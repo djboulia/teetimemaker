@@ -3,6 +3,8 @@
 var loopback = require('loopback');
 var boot = require('loopback-boot');
 
+var ClockSync = require('../common/lib/clocksync.js');
+
 var app = module.exports = loopback();
 
 app.start = function () {
@@ -19,13 +21,20 @@ app.start = function () {
     }
 
     if (process.env.NODE_ENV) {
-      console.log( "App started in " + process.env.NODE_ENV + " mode.");
+      console.log("App started in " + process.env.NODE_ENV + " mode.");
     } else {
-      console.log( "App started in DEVELOPMENT mode.  Test API calls/db will be used!");
+      console.log("App started in DEVELOPMENT mode.  Test API calls/db will be used!");
     }
 
     var Scheduler = app.models.Scheduler;
-    Scheduler.init();
+
+    ClockSync.init()
+      .then(function () {
+        return Scheduler.init(); // promise
+      })
+      .then(function () {
+        console.log("Scheduler initialized.");
+      });
 
   });
 };

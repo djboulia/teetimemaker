@@ -5,10 +5,26 @@
 
 var ntpsync = require('ntpsync');
 
+var initialized = false;
 var ntpInProgress = false;
 var ntpPromise = null;
+var delta = 0;
 
-exports.getClockDelta = function () {
+//
+// return the difference (in ms) between this clock and the time servers
+//
+exports.delta = function() {
+  if (!initialized) {
+    console.log("call init() first to establish delta!");
+  }
+
+  return delta;
+}
+
+//
+// call this function when the server starts up to establish the delta offset
+//
+exports.init = function () {
 
   if (!ntpInProgress) {
     ntpPromise = new Promise(function (resolve, reject) {
@@ -22,16 +38,19 @@ exports.getClockDelta = function () {
         console.log(`Total ${iNTPData.totalSampleCount} successful NTP Pings`);
 
         ntpInProgress = false;
+        delta = iNTPData.minimalNTPLatencyDelta;
+        initialized = true;
 
-        resolve(iNTPData.minimalNTPLatencyDelta);
+        resolve(delta);
 
       }).catch((err) => {
         console.log(err);
         console.log("couldn't calculate time drift, assuming zero");
 
         ntpInProgress = false;
+        delta = 0;
 
-        resolve(0); // just assume no time drift
+        resolve(delta); // just assume no time drift
       });
     });
 
