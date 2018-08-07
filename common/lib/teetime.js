@@ -26,7 +26,7 @@ var TeeTime = function (reservation) {
   this.getDate = function () {
     // console.log("etzMoment: " + etzMoment.format());
     var theTime = new Date(etzMoment.clone().utc().format());
-    return new Date(theTime.getTime() + delta);
+    return theTime;
   };
 
   // calculate the first time we can actually book this tee
