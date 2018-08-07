@@ -115,6 +115,7 @@ var TeeTimeService = function () {
   //
   this.reserve = function (teetimedata) {
     console.log("reserve fired at " + new Date().toString());
+    // console.log("teetimedata " + JSON.stringify(teetimedata));
 
     var self = this;
 

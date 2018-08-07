@@ -101,7 +101,7 @@ module.exports = function (Scheduler) {
       var options = {
         where: {
           processed: {
-            exists : false
+            exists: false
           }
         }
       };
@@ -112,7 +112,7 @@ module.exports = function (Scheduler) {
 
           console.log("found " + records.length + " records!");
 
-          if (records.length==0) {
+          if (records.length == 0) {
             resolve([]);
           }
 
@@ -212,9 +212,20 @@ module.exports = function (Scheduler) {
         member: id,
         time: time,
         courses: courses,
-        golfers: golfers
+        golfers: []
       }
     };
+
+    for (var i = 0; i < golfers.length; i++) {
+      var golfer = golfers[i];
+
+      record.data.golfers.push({
+        name: golfer.name.toString(),
+        id: golfer.id.toString()
+      });
+    }
+
+    console.log("creating record: " + JSON.stringify(record));
 
     var Reservation = app.models.Reservation.Promise;
 
