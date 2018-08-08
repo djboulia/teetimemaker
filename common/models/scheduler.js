@@ -57,14 +57,13 @@ module.exports = function (Scheduler) {
 
       console.log("tee time reservation: " + teetime.getDate().toString());
 
-      console.log("setting job for: " + openTime.toString());
-
       if (!teetime.inTheFuture()) {
         var str = "Tee time occurs in the past, not processing " + teetime.getDate().toString();
         console.log(str);
         resolve(str);
       } else if (teetime.isTeeSheetOpen()) {
         // make the reservation right now
+
         var str = "Tee sheet is open, reserving " + teetime.getDate().toString() + " now.";
         console.log(str);
 
@@ -76,6 +75,8 @@ module.exports = function (Scheduler) {
 
         resolve(str);
       } else {
+        console.log("setting job for: " + openTime.toString());
+
         var str = "Scheduling reservation on " + openTime.toString();
         console.log(str);
 
@@ -160,19 +161,19 @@ module.exports = function (Scheduler) {
           arg: 'time',
           type: 'string',
           required: true,
-          description: 'username for PWCC site'
+          description: 'time to reserve. format: hh:mm [AM|PM] MM/DD/YYYY'
         },
         {
           arg: 'courses',
           type: 'array',
           required: true,
-          description: 'array of course names, in order of preference.  Highlands, Meadows, Fairways'
+          description: 'array of course names, in order of preference.  Valid values: Highlands, Meadows, Fairways'
         },
         {
           arg: 'golfers',
           type: 'array',
           required: true,
-          description: 'array of other golfers to add to the tee time. Max of 3'
+          description: 'array of other golfers to add to the tee time. Max of three.'
         },
         {
           arg: 'ctx',
@@ -194,6 +195,76 @@ module.exports = function (Scheduler) {
       returns: {
         arg: 'reservation',
         type: 'object',
+        root: true
+      }
+    }
+  );
+
+  Scheduler.remoteMethod(
+    'apiPending', {
+      http: {
+        path: '/pending',
+        verb: 'get',
+      },
+      description: 'List the outstanding tee times yet to be scheduled for this user.',
+
+      accepts: [{
+        arg: 'ctx',
+        type: 'string',
+        http: function (ctx) {
+          var req = ctx && ctx.req;
+          var accessToken = req && req.accessToken;
+          var tokenID = accessToken ? accessToken.id : undefined;
+
+          console.log("tokenID " + JSON.stringify(tokenID));
+          console.log("accessToken " + JSON.stringify(accessToken));
+          return (accessToken) ? accessToken.userId : undefined;
+        },
+        description: 'Do not supply this argument, it is automatically extracted ' +
+          'from request headers.',
+      }],
+
+      returns: {
+        arg: 'records',
+        type: 'array',
+        root: true
+      }
+    }
+  );
+
+  Scheduler.remoteMethod(
+    'apiPendingDelete', {
+      http: {
+        path: '/pending/:id',
+        verb: 'delete',
+      },
+      description: 'Remove the scheduled reservation.',
+
+      accepts: [{
+          arg: 'id',
+          type: 'string',
+          required: true
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: function (ctx) {
+            var req = ctx && ctx.req;
+            var accessToken = req && req.accessToken;
+            var tokenID = accessToken ? accessToken.id : undefined;
+
+            console.log("tokenID " + JSON.stringify(tokenID));
+            console.log("accessToken " + JSON.stringify(accessToken));
+            return (accessToken) ? accessToken.userId : undefined;
+          },
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
+        }
+      ],
+
+      returns: {
+        arg: 'records',
+        type: 'array',
         root: true
       }
     }
@@ -242,6 +313,125 @@ module.exports = function (Scheduler) {
         function (err) {
           cb(err);
         });
+  };
+
+  Scheduler.apiPending = function (id, cb) {
+
+    console.log("Scheduler.apiPending for member " + id);
+
+    // find any reservations that have not yet been processed
+    var Reservation = app.models.Reservation.Promise;
+
+    // filter only unprocessed records
+    var options = {
+      where: {
+        processed: {
+          exists: false
+        }
+      }
+    };
+
+    Reservation.findWithOptions(options)
+      .then(function (records) {
+
+        var result = [];
+
+        console.log("found " + records.length + " records!");
+
+
+        for (var i = 0; i < records.length; i++) {
+          var record = records[i];
+
+          console.log("record: " + JSON.stringify(record));
+          var teetime = new TeeTime(record);
+
+          // ignore tee times that have already gone by
+          if (teetime.inTheFuture()) {
+            // now see if the record is owned by the current logged in user
+            if (record.data.member == id) {
+              var data = {
+                id: record.id,
+                teetime: teetime.getDate().toString(),
+                scheduled: teetime.getTeeSheetOpenDate().toString(),
+                courses: record.data.courses,
+                golfers: record.data.golfers
+              }
+
+              result.push(data);
+            }
+          }
+
+        }
+
+        cb(null, result);
+
+      }, function (err) {
+        console.log(err);
+        cb(err);
+      });
+  };
+
+  Scheduler.apiPendingDelete = function (id, memberId, cb) {
+    console.log("Scheduler.apiPendingDelete with id " + id);
+
+    // find the record, make sure this member is the owner
+    var Reservation = app.models.Reservation.Promise;
+
+    Reservation.findById(id)
+      .then(function (record) {
+
+          if (!record || !record.data) {
+            var str = "Reservation with id " + id + " not found.";
+            cb(str);
+            return;
+          }
+
+          if (record.data.member != memberId) {
+            var str = "This reservation not owned by the logged in member.";
+            cb(str);
+            return;
+          }
+
+          // cancel the pending job
+          var job = jobs[id];
+          if (!job) {
+            var str = "No pending job found for id " + id;
+            cb(str);
+            return;
+          }
+
+          if (!job.running) {
+            var str = "No running job for id " + id;
+            cb(str);
+            return;
+          }
+
+          job.stop();
+
+          if (job.running) {
+            var str = "Attempted to stop job, but still shows running for id " + id;
+            cb(str);
+            return;
+          } else {
+            console.log("Stopped job for id " + id);
+            jobs[id] = undefined;
+          }
+
+          // delete the specified record
+          Reservation.destroyById(id)
+            .then(function () {
+                cb(null, "Deleted scheduled job");
+              },
+              function (err) {
+                cb(err);
+              })
+
+        },
+        function (err) {
+          cb(err);
+        })
+
+
   };
 
 };

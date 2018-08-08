@@ -48,6 +48,19 @@ module.exports = function (Reservation) {
     });
   };
 
+  Reservation.Promise.destroyById = function (id) {
+    return new Promise(function (resolve, reject) {
+
+      Reservation.destroyById(id, function (err) {
+        if (!err) {
+          resolve();
+        } else {
+          reject(err);
+        }
+      });
+    });
+  };
+
   Reservation.Promise.findById = function (id) {
     return new Promise(function (resolve, reject) {
 
