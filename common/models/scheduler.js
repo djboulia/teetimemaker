@@ -201,9 +201,9 @@ module.exports = function (Scheduler) {
   );
 
   Scheduler.remoteMethod(
-    'apiPending', {
+    'apiList', {
       http: {
-        path: '/pending',
+        path: '/',
         verb: 'get',
       },
       description: 'List the outstanding tee times yet to be scheduled for this user.',
@@ -233,9 +233,9 @@ module.exports = function (Scheduler) {
   );
 
   Scheduler.remoteMethod(
-    'apiPendingDelete', {
+    'apiDelete', {
       http: {
-        path: '/pending/:id',
+        path: '/:id',
         verb: 'delete',
       },
       description: 'Remove the scheduled reservation.',
@@ -269,6 +269,40 @@ module.exports = function (Scheduler) {
       }
     }
   );
+
+  Scheduler.remoteMethod(
+    'apiListHistory', {
+      http: {
+        path: '/history',
+        verb: 'get',
+      },
+      description: 'List the prior tee times for this user.',
+
+      accepts: [{
+        arg: 'ctx',
+        type: 'string',
+        http: function (ctx) {
+          var req = ctx && ctx.req;
+          var accessToken = req && req.accessToken;
+          var tokenID = accessToken ? accessToken.id : undefined;
+
+          console.log("tokenID " + JSON.stringify(tokenID));
+          console.log("accessToken " + JSON.stringify(accessToken));
+          return (accessToken) ? accessToken.userId : undefined;
+        },
+        description: 'Do not supply this argument, it is automatically extracted ' +
+          'from request headers.',
+      }],
+
+      returns: {
+        arg: 'records',
+        type: 'array',
+        root: true
+      }
+    }
+  );
+
+
 
   Scheduler.apiCreate = function (time, courses, golfers, id, cb) {
 
@@ -315,9 +349,9 @@ module.exports = function (Scheduler) {
         });
   };
 
-  Scheduler.apiPending = function (id, cb) {
+  Scheduler.apiList = function (id, cb) {
 
-    console.log("Scheduler.apiPending for member " + id);
+    console.log("Scheduler.apiList for member " + id);
 
     // find any reservations that have not yet been processed
     var Reservation = app.models.Reservation.Promise;
@@ -342,7 +376,6 @@ module.exports = function (Scheduler) {
         for (var i = 0; i < records.length; i++) {
           var record = records[i];
 
-          console.log("record: " + JSON.stringify(record));
           var teetime = new TeeTime(record);
 
           // ignore tee times that have already gone by
@@ -357,8 +390,13 @@ module.exports = function (Scheduler) {
                 golfers: record.data.golfers
               }
 
+              console.log("record: " + JSON.stringify(record));
               result.push(data);
+            } else {
+              console.log("tee time not owned by " + id + ", not adding record " + record.id);
             }
+          } else {
+            console.log("tee time in the past, not adding record " + record.id);
           }
 
         }
@@ -371,8 +409,8 @@ module.exports = function (Scheduler) {
       });
   };
 
-  Scheduler.apiPendingDelete = function (id, memberId, cb) {
-    console.log("Scheduler.apiPendingDelete with id " + id);
+  Scheduler.apiDelete = function (id, memberId, cb) {
+    console.log("Scheduler.apiDelete with id " + id);
 
     // find the record, make sure this member is the owner
     var Reservation = app.models.Reservation.Promise;
@@ -420,7 +458,9 @@ module.exports = function (Scheduler) {
           // delete the specified record
           Reservation.destroyById(id)
             .then(function () {
-                cb(null, "Deleted scheduled job");
+                var str = "Deleted scheduled job";
+                console.log(str);
+                cb(null, str);
               },
               function (err) {
                 cb(err);
@@ -431,7 +471,78 @@ module.exports = function (Scheduler) {
           cb(err);
         })
 
+  };
 
+  Scheduler.apiListHistory = function (id, cb) {
+
+    console.log("Scheduler.apiListHistory for member " + id);
+
+    // find any reservations that have not yet been processed
+    var Reservation = app.models.Reservation.Promise;
+
+    // we want the history, so filter only already processed records
+    var options = {
+      where: {
+        processed: {
+          eq: true
+        }
+      }
+    };
+
+    Reservation.findWithOptions(options)
+      .then(function (records) {
+
+        var result = [];
+
+        console.log("found " + records.length + " records!");
+
+
+        for (var i = 0; i < records.length; i++) {
+          var record = records[i];
+
+          var teetime = new TeeTime(record);
+
+          // now see if the record is owned by the current logged in user
+          if (record.data.member == id) {
+            var data = {
+              id: record.id,
+              teetime: teetime.getDate().toString(),
+              courses: record.data.courses,
+              golfers: record.data.golfers,
+              result: record.data.result
+            }
+
+            console.log("record: " + JSON.stringify(record));
+            result.push(data);
+          } else {
+            console.log("tee time not owned by " + id + ", not adding record " + record.id);
+          }
+
+        }
+
+        //
+        // sort the result in reverse order (most recent first)
+        //
+        result.sort(function (a, b) {
+          var aTeeTime = new Date(a.teetime).getTime();
+          var bTeeTime = new Date(b.teetime).getTime();
+
+          if (bTeeTime < aTeeTime) {
+            return -1;
+          } else if (bTeeTime > aTeeTime) {
+            return 1;
+          } else {
+            return 0;
+          }
+
+        });
+
+        cb(null, result);
+
+      }, function (err) {
+        console.log(err);
+        cb(err);
+      });
   };
 
 };
