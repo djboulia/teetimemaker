@@ -134,10 +134,16 @@ var TeeTimeService = function () {
 
       request.post(teetimedata, function (json) {
         if (json) {
-          console.log(JSON.stringify(json));
-          resolve(json);
+          if (json.time) {
+            console.log(JSON.stringify(json));
+            resolve(json);
+          } else {
+            // didn't return a tee time, some error occured
+            console.log("Error: " + JSON.stringify(json));
+            reject(json);
+          }
         } else {
-          var str = "Error reserving tee times!";
+          var str = "Error reserving tee time!";
           console.log(str);
           reject(str);
         }
