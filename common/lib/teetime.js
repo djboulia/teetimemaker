@@ -29,27 +29,40 @@ var TeeTime = function (reservation) {
     return theTime;
   };
 
+  //
   // calculate the first time we can actually book this tee
-  // time.  the tee sheet opens at 7am three days before
+  // time.  the tee sheet opens at 7am three days before for Sat/Sun,
+  // 14 days before for Tues-Thu
+  // 
   this.getTeeSheetOpenDate = function () {
     // console.log("etzMoment: " + etzMoment.format());
 
     // move to the beginning of the day of the reservation
+    var msInADay = 24 * 60 * 60 * 1000;
+    var daysTillOpen = 0;
+
     var m = etzMoment.clone().startOf("day");
+    var dayOfWeek = m.day();
+
+    console.log("dayOfWeek " + dayOfWeek);
+
+    if (dayOfWeek > 1 && dayOfWeek < 6) {
+      // Tues-Fri is a 14 day window, back up appropriately
+      m.subtract(14, 'days');
+    } else {
+      // Sat/Sun are a 3 day window, back up appropriately
+      m.subtract(3, 'days');
+    }
+
+    // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
+    // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
+    m.hours(6).minutes(58);
+
     var date = new Date(m.utc().format());
 
-    // console.log("getTeeSheetOpenDate: " + date.toString());
+    console.log("Tee sheet opens at : " + date.toString());
 
-    // move back 3 days, then forward to 2 minutes before 7am
-    // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
-    // sure we get in before anyone else (i.e. 6:58 AM 3 days before)
-    var theTime = new Date(date.getTime() - (3 * 24 * 60 * 60 * 1000) // back 3 days
-      +
-      (7 * 60 * 60 * 1000) // forward to 7am
-      -
-      (2 * 60 * 1000)); // back 2 minutes
-
-    return new Date(theTime.getTime() + delta);
+    return new Date(date.getTime() + delta);
   };
 
   //
