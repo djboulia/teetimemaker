@@ -3,10 +3,10 @@
 var app = require('../../server/server');
 
 var TeeTime = require('../lib/teetime.js');
-var TeeTimeService = require('../lib/teetimeservice.js');
+var TeeTimeAPI = require('../lib/pwcc/teetimeapi.js');
 
 module.exports = function (Reservation) {
-  var teeTimeService = new TeeTimeService();
+  var teeTimeAPI = new TeeTimeAPI();
 
   /**
    * create promise-friendly versions of key functions we use internally
@@ -18,7 +18,7 @@ module.exports = function (Reservation) {
     return new Promise(function (resolve, reject) {
 
       var teetime = new TeeTime(record);
-      var teetimeService = new TeeTimeService();
+      var teeTimeAPI = new TeeTimeAPI();
 
       if (!teetime.inTheFuture()) {
         var str = "tee time occurs in the past, not scheduling reservation " +
@@ -32,7 +32,7 @@ module.exports = function (Reservation) {
         return;
       }
 
-      if (!teetimeService.validCourses(record.data.courses)) {
+      if (!teeTimeAPI.validCourses(record.data.courses)) {
         reject("Reservation not scheduled.  Course list is invalid: " + JSON.stringify(courses));
         return;
       }
@@ -160,7 +160,7 @@ module.exports = function (Reservation) {
                     "golfers": golfers
                   };
 
-                  teeTimeService.reserve(teetime)
+                  teeTimeAPI.reserve(teetime)
                     .then(function (time) {
                         // update our reservation record to indicate we've
                         // made the reservation

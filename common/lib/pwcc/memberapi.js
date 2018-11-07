@@ -2,7 +2,7 @@
 // wrapper for the tee time service. This runs as a separate REST service
 // the service does the actual booking on the golf club web site
 //
-var JsonRequest = require('./jsonrequest.js');
+var JsonRequest = require('../jsonrequest.js');
 
 var BASE_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/member/";
 

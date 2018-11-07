@@ -1,7 +1,7 @@
 'use strict';
 
 var Password = require('../lib/password.js');
-var MemberAPI = require('../lib/memberapi.js');
+var MemberAPI = require('../lib/pwcc/memberapi.js');
 var logger = require('../lib/logger.js');
 var app = require('../../server/server');
 

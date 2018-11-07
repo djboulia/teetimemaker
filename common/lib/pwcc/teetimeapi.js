@@ -2,13 +2,13 @@
 // wrapper for the tee time service. This runs as a separate REST service
 // the service does the actual booking on the golf club web site
 //
-var JsonRequest = require('../../common/lib/jsonrequest.js');
-var MockJsonRequest = require('../../common/lib/mockjsonrequest.js');
+var JsonRequest = require('../jsonrequest.js');
+var MockJsonRequest = require('../mockjsonrequest.js');
 
 var BASE_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/teetime/";
 
 var getTestMode = function () {
-  var app = require('../../server/server');
+  var app = require('../../../server/server');
 
   var mockTeeTimes = app.get('mockTeeTimes');
   if (mockTeeTimes) {
@@ -41,7 +41,7 @@ var getTestMode = function () {
 // };
 //
 
-var TeeTimeService = function () {
+var TeeTimeAPI = function () {
 
   var testMode = getTestMode();
 
@@ -154,4 +154,4 @@ var TeeTimeService = function () {
 
 };
 
-module.exports = TeeTimeService;
+module.exports = TeeTimeAPI;
