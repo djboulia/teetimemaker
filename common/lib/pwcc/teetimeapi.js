@@ -5,7 +5,7 @@
 var JsonRequest = require('../jsonrequest.js');
 var MockJsonRequest = require('../mockjsonrequest.js');
 
-var BASE_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/teetime/";
+var BASE_URL = "https://teetimepwccjs.mybluemix.net/api/teetimes/";
 
 var getTestMode = function () {
   var app = require('../../../server/server');
@@ -45,6 +45,24 @@ var TeeTimeAPI = function () {
 
   var testMode = getTestMode();
 
+  var parseDate = function (timedate) {
+    // break up the date into from a combined time and date string 
+    const timeParts = timedate.split(' ');
+
+    const date = timeParts[2];
+
+    return date;
+  }
+
+  var parseTime = function (timedate) {
+  // break up the time into from a combined time and date string 
+    const timeParts = timedate.split(' ');
+
+    const time = timeParts[0] + ' ' + timeParts[1];
+  
+    return time;
+  }
+
   this.validCourses = function (courses) {
     if (courses.length == 0 || courses.length > 3) {
       return false;
@@ -68,7 +86,7 @@ var TeeTimeAPI = function () {
   };
 
   this.validGolfers = function (golfers) {
-    if (golfers.length == 0 || golfers.length > 4) {
+    if (golfers.length > 3) {
       return false;
     }
 
@@ -79,8 +97,18 @@ var TeeTimeAPI = function () {
   // search for a tee time with the backend reservation system
   // see teetimedata above for structure of the input
   //
-  this.search = function (teetimedata) {
+  this.search = function (username, password, timedate, courses) {
     console.log("search fired at " + new Date().toString());
+
+    const teetimedata = {
+      username : username,
+      password : password,
+      time : parseTime(timedate),
+      date : parseDate(timedate),
+      courses : courses
+    }
+
+    console.log("teetimedata " + JSON.stringify(teetimedata));
 
     var self = this;
 
@@ -90,10 +118,6 @@ var TeeTimeAPI = function () {
 
       if (!self.validCourses(teetimedata.courses)) {
         reject("invalid course list in input : " + JSON.stringify(teetimedata));
-      }
-
-      if (!self.validGolfers(teetimedata.golfers)) {
-        reject("invalid golfers array in input : " + JSON.stringify(teetimedata));
       }
 
       request.post(teetimedata, function (json) {
@@ -113,9 +137,19 @@ var TeeTimeAPI = function () {
   // book at tee time with the backend reservation system
   // see teetimedata above for structure of the input
   //
-  this.reserve = function (teetimedata) {
+  this.reserve = function (username, password, timedate, courses, players) {
     console.log("reserve fired at " + new Date().toString());
-    // console.log("teetimedata " + JSON.stringify(teetimedata));
+
+    const teetimedata = {
+      username : username,
+      password : password,
+      time : parseTime(timedate),
+      date : parseDate(timedate),
+      courses : courses,
+      players : players
+    }
+
+    console.log("teetimedata " + JSON.stringify(teetimedata));
 
     var self = this;
 
@@ -126,10 +160,12 @@ var TeeTimeAPI = function () {
 
       if (!self.validCourses(teetimedata.courses)) {
         reject("invalid course list in input : " + JSON.stringify(teetimedata));
+        return;
       }
 
-      if (!self.validGolfers(teetimedata.golfers)) {
+      if (!self.validGolfers(teetimedata.players)) {
         reject("invalid golfers array in input : " + JSON.stringify(teetimedata));
+        return;
       }
 
       request.post(teetimedata, function (json) {

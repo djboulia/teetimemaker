@@ -54,9 +54,15 @@ var TeeTime = function (reservation) {
       m.subtract(3, 'days');
     }
 
-    // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
-    // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
-    m.hours(6).minutes(58);
+    // [11/07/2018] changed this back to exactly 7am with the new
+    // tee sheet software; prior software allowed us to cheat
+    //
+    // // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
+    // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
+    // m.hours(6).minutes(58);
+
+    // start right at 7am with new tee sheet rules
+    m.hours(7).minutes(0);
 
     var date = new Date(m.utc().format());
 

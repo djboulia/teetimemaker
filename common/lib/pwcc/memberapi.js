@@ -4,7 +4,7 @@
 //
 var JsonRequest = require('../jsonrequest.js');
 
-var BASE_URL = "https://teetime-pwcc.mybluemix.net/teetimepwcc/v1/member/";
+var BASE_URL = "https://teetimepwccjs.mybluemix.net/api/members/";
 
 var MemberAPI = function () {
 
@@ -19,7 +19,7 @@ var MemberAPI = function () {
       var request = new JsonRequest(url);
 
       var json = {
-        userid: userid,
+        username: userid,
         password: password
       };
 
@@ -45,7 +45,7 @@ var MemberAPI = function () {
       var request = new JsonRequest(url);
 
       var json = {
-        userid: userid,
+        username: userid,
         password: password,
         lastname: lastName
       };

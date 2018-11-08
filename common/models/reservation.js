@@ -140,27 +140,16 @@ module.exports = function (Reservation) {
                   var time = record.data.time;
                   var courses = record.data.courses;
 
-                  // build the foursome; logged in user has to be first tee time entry
+                  // build the reamining foursome members; 
+                  // logged in user is implied as first tee time
                   var golfers = [];
-                  golfers.push({
-                    "name": user.name,
-                    "id": user.id
-                  });
 
                   for (var i=0; i<record.data.golfers.length; i++) {
                     var golfer = record.data.golfers[i];
                     golfers.push(golfer);
                   }
 
-                  var teetime = {
-                    "userid": userid,
-                    "password": password,
-                    "time": time,
-                    "courses": courses,
-                    "golfers": golfers
-                  };
-
-                  teeTimeAPI.reserve(teetime)
+                  teeTimeAPI.reserve(userid, password, time, courses, golfers)
                     .then(function (time) {
                         // update our reservation record to indicate we've
                         // made the reservation
