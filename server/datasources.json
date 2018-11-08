@@ -5,8 +5,8 @@
   },
   "teetime": {
     "database": "teetime",
-    "username": "c25b2efd-6e76-445d-be39-8413a3a9bfb1-bluemix",
-    "password": "d62d7976fd9bb80624afdb6ac8723ca708fc0b4ff5cba084b3409413420ddb9f",
+    "username": "b506e5b5-76a6-41b4-92cf-2ed695926e99-bluemix",
+    "password": "a2baa1ce750ab0fde48324fef9b88939710fdc9fc5eaec9f1cda43fd7e250061",
     "name": "teetime",
     "modelIndex": "className",
     "connector": "cloudant"
