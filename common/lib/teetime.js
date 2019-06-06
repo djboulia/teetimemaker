@@ -49,20 +49,23 @@ var TeeTime = function (reservation) {
     if (dayOfWeek > 1 && dayOfWeek < 6) {
       // Tues-Fri is a 14 day window, back up appropriately
       m.subtract(14, 'days');
+
+      // tee sheet opens at 7:30am on weekdays with new tee sheet rules
+      m.hours(7).minutes(30);
     } else {
       // Sat/Sun are a 3 day window, back up appropriately
       m.subtract(3, 'days');
+
+      // [11/07/2018] changed this back to exactly 7am with the new
+      // tee sheet software; prior software allowed us to cheat
+      //
+      // // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
+      // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
+      // m.hours(6).minutes(58);
+
+      // start right at 7am with new tee sheet rules
+      m.hours(7).minutes(0);
     }
-
-    // [11/07/2018] changed this back to exactly 7am with the new
-    // tee sheet software; prior software allowed us to cheat
-    //
-    // // the tee sheet opens at 7am Eastern, but we cheat by 2 minutes to make
-    // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
-    // m.hours(6).minutes(58);
-
-    // start right at 7am with new tee sheet rules
-    m.hours(7).minutes(0);
 
     var date = new Date(m.utc().format());
 
