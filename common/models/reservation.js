@@ -6,7 +6,6 @@ var TeeTime = require('../lib/teetime.js');
 var TeeTimeAPI = require('../lib/pwcc/teetimeapi.js');
 
 module.exports = function (Reservation) {
-  var teeTimeAPI = new TeeTimeAPI();
 
   /**
    * create promise-friendly versions of key functions we use internally
@@ -125,6 +124,7 @@ module.exports = function (Reservation) {
   };
 
   Reservation.Promise.reserve = function (id) {
+
     return new Promise(function (resolve, reject) {
 
         Reservation.Promise.findById(id)
@@ -140,18 +140,25 @@ module.exports = function (Reservation) {
                   var time = record.data.time;
                   var courses = record.data.courses;
 
-                  // build the reamining foursome members; 
+                  // build the remaining foursome members; 
                   // logged in user is implied as first tee time
                   var golfers = [];
 
-                  for (var i=0; i<record.data.golfers.length; i++) {
+                  for (var i = 0; i < record.data.golfers.length; i++) {
                     var golfer = record.data.golfers[i];
                     golfers.push(golfer);
                   }
 
-                  teeTimeAPI.reserve(userid, password, time, courses, golfers)
-                    .then(function (time) {
-                        // update our reservation record to indicate we've
+                  var teeTimeAPI = new TeeTimeAPI();
+
+                  teeTimeAPI.login(userid, password)
+                    .then(function (result) { // login result
+                      return teeTimeAPI.reserve(time, courses, golfers);
+                    })
+                    .then(function (time) {   // reserve result
+                      console.log("Reservation success!");
+
+                      // update our reservation record to indicate we've
                         // made the reservation
                         record.processed = true;
                         record.data.result = {
@@ -168,6 +175,8 @@ module.exports = function (Reservation) {
                             });
                       },
                       function (err) {
+                        console.log("Error: " +err);
+
                         // update our reservation record to indicate we've
                         // processed the record, but there was an error
                         record.processed = true;

@@ -10,7 +10,7 @@ var mockRequest = function (url, data, cb) {
 
     var json = {};
 
-    if (url.endsWith('search')) {
+    if (url.includes('/search?access_token')) {
       // fake up a reserve result
       console.log("MOCK SEARCH call to " + url);
 
@@ -20,11 +20,12 @@ var mockRequest = function (url, data, cb) {
         "Thu Aug 02 14:10:00 UTC 2018 78539893 Meadows [Available|Available|Available|Available]"
       ];
 
-    } else if (url.endsWith('reserve')) {
+    } else if (url.includes('/reserve?access_token')) {
       // fake up a reserve result
       console.log("MOCK RESERVE call to " + url);
 
       json.time = data ? data.time : "";
+      json.date = data ? data.date : "";
       json.course = data.courses ? data.courses[0] : "";
     } else {
       console.log("MOCK UNKNOWN call to " + url);

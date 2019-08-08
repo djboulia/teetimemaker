@@ -1,7 +1,7 @@
 'use strict';
 
 var Password = require('../lib/password.js');
-var MemberAPI = require('../lib/pwcc/memberapi.js');
+var TeeTimeAPI = require('../lib/pwcc/teetimeapi.js');
 var logger = require('../lib/logger.js');
 var app = require('../../server/server');
 
@@ -362,10 +362,17 @@ module.exports = function (Member) {
       .then(function (record) {
           if (record == null) {
 
-            // no existing user record, now go look for additiona info
-            var member = new MemberAPI();
-            member.info(username, password)
+            // no existing user record, now go look for additional info
+            var teetime = new TeeTimeAPI();
+
+            teetime.login(username, password)
               .then(function (result) {
+                // successful login
+                return teetime.memberInfo();
+              })
+              .then(function (result) {
+                  // result of info() call
+
                   // add a new entry to the database
                   var record = newMemberRecord(username, password, result.name, result.id);
 
@@ -378,7 +385,7 @@ module.exports = function (Member) {
                       });
                 },
                 function (err) {
-                  cb("Couldn't get info for " + username);
+                  cb("Error " + err + " Couldn't get info for " + username);
                 });
 
           } else {
@@ -407,9 +414,16 @@ module.exports = function (Member) {
           console.log("Found user! " + JSON.stringify(record));
 
           // validate these credentials
-          var member = new MemberAPI();
-          member.info(username, password)
+          var teetime = new TeeTimeAPI();
+
+          teetime.login(username, password)
             .then(function (result) {
+              // successful login
+              return teetime.memberInfo();
+            })
+            .then(function (result) {
+                // result of info() call
+
                 updateMemberRecord(record, username, password, result.name, result.id);
 
                 // update the backend database
@@ -499,10 +513,15 @@ module.exports = function (Member) {
 
           var user = userCredentialsFromRecord(record);
 
-          // go look for additiona info
-          var member = new MemberAPI();
-          member.search(user.username, user.password, lastname)
+          // go look for additional info
+          var teetime = new TeeTimeAPI();
+
+          teetime.login(user.username, user.password)
             .then(function (result) {
+              return teetime.memberSearch(lastname);
+            })
+            .then(function (result) {
+                // result of search
                 cb(null, result);
               },
               function (err) {

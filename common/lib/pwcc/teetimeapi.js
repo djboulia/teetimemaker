@@ -1,3 +1,4 @@
+// TODO: add passing of token info after login
 //
 // wrapper for the tee time service. This runs as a separate REST service
 // the service does the actual booking on the golf club web site
@@ -5,7 +6,10 @@
 var JsonRequest = require('../jsonrequest.js');
 var MockJsonRequest = require('../mockjsonrequest.js');
 
-var BASE_URL = "https://teetimepwccjs.mybluemix.net/api/teetimes/";
+// const BASE_URL = "https://teetimepwccjs.mybluemix.net/api/";
+const BASE_URL = "http://localhost:3000/api/";
+const MEMBER_BASE_URL = BASE_URL + "Members/"
+const TEETIME_BASE_URL = BASE_URL + "TeeTimes/";
 
 var getTestMode = function () {
   var app = require('../../../server/server');
@@ -18,50 +22,200 @@ var getTestMode = function () {
   return mockTeeTimes;
 };
 
-//
-// these functions take the following input:
-//  
-// teetimedata consists of:
-//  {
-//   "userid": userid for the back end reservation system
-//   "password": password for the back end reservation system
-//   "time": the time and date of the tee time, e.g. 8:30 AM 8/8/2018
-//   "courses": an array of courses in order of preference: Highlands, Meadows, Fairways
-//   "golfers": an array of golfers to include in this tee time
-//              a minimum of 1 golfer is required (the user booking the tee time)
-//              a maximum of 4 golfers allowed
-//
-//   each golfer consists of the following structure:
-//      {
-//        id: the id of this golfer in the system (confusingly, this is NOT the userid)
-//        name: the name of this golfer in the system
-//      }
-//
-//  a golfer's id and name can be retrieved via the memberapi.search function
-// };
-//
+var parseDate = function (timedate) {
+  // break up the date into from a combined time and date string 
+  const timeParts = timedate.split(' ');
+
+  const date = timeParts[2];
+
+  return date;
+}
+
+var parseTime = function (timedate) {
+  // break up the time into from a combined time and date string 
+  const timeParts = timedate.split(' ');
+
+  const time = timeParts[0] + ' ' + timeParts[1];
+
+  return time;
+}
+
+/**
+ * the search and reserve functions expect the following input:
+ * 
+ * teetimedata consists of:
+ * {
+ *  "time": the time and date of the tee time, e.g. 8:30 AM 8/8/2018
+ *  "courses": an array of courses in order of preference: Highlands, Meadows, Fairways
+ *  "golfers": an array of golfers to include in this tee time
+ *            a minimum of 1 golfer is required (the user booking the tee time)
+ *            a maximum of 4 golfers allowed
+ * 
+ *  each golfer consists of the following structure:
+ *    {
+ *        id: the id of this golfer in the system (confusingly, this is NOT the userid)
+ *        name: the name of this golfer in the system
+ *    }
+ * 
+ *   a golfer's id and name can be retrieved via the memberSearch function
+ * };
+ */
+var teeTimeArgs = function (timedate, courses, players) {
+  const teetimedata = {
+    time: parseTime(timedate),
+    date: parseDate(timedate),
+    courses: courses
+  }
+
+  if (players != undefined) {
+    teetimedata.players = players;
+  }
+
+  return teetimedata;
+};
 
 var TeeTimeAPI = function () {
 
   var testMode = getTestMode();
+  var loggedIn = false;
+  var tokenId = undefined;
 
-  var parseDate = function (timedate) {
-    // break up the date into from a combined time and date string 
-    const timeParts = timedate.split(' ');
+  const MEMBER_LOGIN_URL = MEMBER_BASE_URL + "login";
+  const MEMBER_LOGOUT_URL = MEMBER_BASE_URL + "logout";
+  const MEMBER_INFO_URL = MEMBER_BASE_URL + "info";
+  const MEMBER_SEARCH_URL = MEMBER_BASE_URL + "search";
 
-    const date = timeParts[2];
+  const TEETIME_SEARCH_URL = TEETIME_BASE_URL + "search";
+  const TEETIME_RESERVE_URL = TEETIME_BASE_URL + "reserve";
 
-    return date;
-  }
+  this.buildTokenizedUrl = function(url) {
+    const tokenUrl = url + "?access_token=" + tokenId;
 
-  var parseTime = function (timedate) {
-  // break up the time into from a combined time and date string 
-    const timeParts = timedate.split(' ');
+    return tokenUrl;
+  };
 
-    const time = timeParts[0] + ' ' + timeParts[1];
-  
-    return time;
-  }
+  this.login = function (username, password) {
+    return new Promise(function (resolve, reject) {
+      console.log("member login fired at " + new Date().toString());
+
+      var request = new JsonRequest(MEMBER_LOGIN_URL);
+
+      var json = {
+        username: username,
+        password: password
+      };
+
+      request.post(json, function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+
+          tokenId = json.id;
+          loggedIn = true;
+
+          resolve(json);
+        } else {
+          var str = "Error during login!";
+          console.log(str);
+          reject(str);
+        }
+      });
+    });
+
+  };
+
+  this.logout = function () {
+    const self = this;
+
+    return new Promise(function (resolve, reject) {
+      console.log("member logout fired at " + new Date().toString());
+
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
+
+      var url = self.buildTokenizedUrl(MEMBER_LOGOUT_URL)
+      var request = new JsonRequest(url);
+
+      var json = {};
+
+      request.post(json, function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+
+          tokenId = undefined;
+          loggedIn = false;
+
+          resolve(json);
+        } else {
+          var str = "Error during logout!";
+          console.log(str);
+          reject(str);
+        }
+      });
+    });
+
+  };
+
+  this.memberInfo = function () {
+    const self = this;
+
+    return new Promise(function (resolve, reject) {
+      console.log("member info fired at " + new Date().toString());
+
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
+
+      var url = self.buildTokenizedUrl(MEMBER_INFO_URL)
+      var request = new JsonRequest(url);
+      var json = {};
+
+      request.post(json, function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+          resolve(json);
+        } else {
+          var str = "Error getting member info!";
+          console.log(str);
+          reject(str);
+        }
+      });
+    });
+
+  };
+
+  this.memberSearch = function (lastName) {
+    const self = this;
+
+    return new Promise(function (resolve, reject) {
+      console.log("member search fired at " + new Date().toString());
+
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
+
+      var url = self.buildTokenizedUrl(MEMBER_SEARCH_URL)
+      var request = new JsonRequest(url);
+
+      var json = {
+        lastname: lastName
+      };
+
+      request.post(json, function (json) {
+        if (json) {
+          console.log(JSON.stringify(json));
+          resolve(json);
+        } else {
+          var str = "Error searching for member " + lastName + "!";
+          console.log(str);
+          reject(str);
+        }
+      });
+    });
+  };
 
   this.validCourses = function (courses) {
     if (courses.length == 0 || courses.length > 3) {
@@ -93,32 +247,31 @@ var TeeTimeAPI = function () {
     return true;
   };
 
-  //
-  // search for a tee time with the backend reservation system
-  // see teetimedata above for structure of the input
-  //
-  this.search = function (username, password, timedate, courses) {
+  /**
+   * search for a tee time with the backend reservation system
+   * see teetimedata above for structure of the input
+   */
+  this.search = function (timedate, courses) {
+    const self = this;
+
     console.log("search fired at " + new Date().toString());
 
-    const teetimedata = {
-      username : username,
-      password : password,
-      time : parseTime(timedate),
-      date : parseDate(timedate),
-      courses : courses
-    }
-
+    const teetimedata = teeTimeArgs(timedate, courses);
     console.log("teetimedata " + JSON.stringify(teetimedata));
 
-    var self = this;
-
     return new Promise(function (resolve, reject) {
-      var url = BASE_URL + "search";
-      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
 
       if (!self.validCourses(teetimedata.courses)) {
         reject("invalid course list in input : " + JSON.stringify(teetimedata));
+        return;
       }
+
+      var url = self.buildTokenizedUrl(TEETIME_SEARCH_URL)
+      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
 
       request.post(teetimedata, function (json) {
         if (json) {
@@ -133,30 +286,24 @@ var TeeTimeAPI = function () {
     });
   };
 
-  //
-  // book at tee time with the backend reservation system
-  // see teetimedata above for structure of the input
-  //
-  this.reserve = function (username, password, timedate, courses, players) {
+  /**
+   * book at tee time with the backend reservation system
+   * see teetimedata above for structure of the input
+   */
+  this.reserve = function (timedate, courses, players) {
+    const self = this;
+
     console.log("reserve fired at " + new Date().toString());
 
-    const teetimedata = {
-      username : username,
-      password : password,
-      time : parseTime(timedate),
-      date : parseDate(timedate),
-      courses : courses,
-      players : players
-    }
-
+    const teetimedata = teeTimeArgs(timedate, courses, players);
     console.log("teetimedata " + JSON.stringify(teetimedata));
-
-    var self = this;
 
     return new Promise(function (resolve, reject) {
 
-      var url = BASE_URL + "reserve";
-      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
 
       if (!self.validCourses(teetimedata.courses)) {
         reject("invalid course list in input : " + JSON.stringify(teetimedata));
@@ -168,13 +315,16 @@ var TeeTimeAPI = function () {
         return;
       }
 
+      var url = self.buildTokenizedUrl(TEETIME_RESERVE_URL)
+      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
+
       request.post(teetimedata, function (json) {
         if (json) {
           if (json.time) {
             console.log(JSON.stringify(json));
             resolve(json);
           } else {
-            // didn't return a tee time, some error occured
+            // didn't return a tee time, some error occurred
             console.log("Error: " + JSON.stringify(json));
             reject(json);
           }
