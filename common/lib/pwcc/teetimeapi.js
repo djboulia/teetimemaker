@@ -6,8 +6,8 @@
 var JsonRequest = require('../jsonrequest.js');
 var MockJsonRequest = require('../mockjsonrequest.js');
 
-// const BASE_URL = "https://teetimepwccjs.mybluemix.net/api/";
-const BASE_URL = "http://localhost:3000/api/";
+const BASE_URL = "https://teetimepwccjs.mybluemix.net/api/";
+// **testing** const BASE_URL = "http://localhost:3000/api/";
 const MEMBER_BASE_URL = BASE_URL + "Members/"
 const TEETIME_BASE_URL = BASE_URL + "TeeTimes/";
 
