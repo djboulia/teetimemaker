@@ -15,20 +15,82 @@ module.exports = function (Scheduler) {
 
   var jobs = [];
 
-  //
-  // run a job at the specified date
-  //
-  var addJob = function (time, id) {
+  /**
+   * book the tee time
+   * 
+   * @param {Date} time when to make the reservation
+   * @param {String} id model id for this reservation
+   * @param {Object} session holds a logged in session to use for reservation
+   */
+  var doReservation = function (time, id, session) {
     var job = new CronJob(time, function () {
+        console.log("doReservation cron job running");
+
         var Reservation = app.models.Reservation.Promise;
 
-        Reservation.reserve(id)
-          .then(function (result) {
-              console.log(result);
-            },
-            function (err) {
-              console.log(err);
-            });
+        Reservation.reserve(id, session)
+        .then(function (result) {
+            console.log(result);
+          },
+          function (err) {
+            console.log(err);
+          });
+      },
+      function () {
+        /* This function is executed when the job stops */
+      },
+      true, /* Start the job right now */
+      'America/New_York' /* Time zone of this job. */
+    );
+
+    job.start();
+  };
+
+  /**
+   * make the reservation at the specified date
+   * we do this in two steps: 
+   * 1) log in as the specified user one minute prior
+   * 2) after login, make the reservation at the given time
+   * 
+   * @param {Date} time the date and time to run this job
+   * @param {String} id model id for this reservation
+   */
+  var addJob = function (time, id) {
+    let timeToLogin = time.getTime();
+    timeToLogin -= 60 * 1000; // go back 1 minute
+
+    const now = Date.now();
+    if (timeToLogin <= now) {
+      // don't set a cron job in the past, just make it a second in the future
+      console.log("login cron job would be in the past, adjusting to run immediately.");
+      timeToLogin = now + 1000; 
+    }
+
+    var job = new CronJob(new Date(timeToLogin), function () {
+        var Reservation = app.models.Reservation.Promise;
+
+        Reservation.login(id)
+          .then(function (session) {
+
+            const now = Date.now();
+            const timeMs = time.getTime();
+
+            if (now >= timeMs) {
+              // took us more than a minute to login, just trigger the reservation now
+              time = new Date(now + 1000); // run one second from now
+              console.log("logged in, making reservation in 1 second.");
+            } else {
+              const secsLeft = (timeMs - now)/1000;
+              console.log("logged in, making reservation in " + secsLeft + " seconds.");
+            }
+
+            doReservation(time, id, session);
+
+            jobs[id] = undefined; // remove this job from our list of active jobs
+          }, function (err) {
+            console.log(err);
+          });
+
       },
       function () {
         /* This function is executed when the job stops */
@@ -67,9 +129,9 @@ module.exports = function (Scheduler) {
         var str = "Tee sheet is open, reserving " + teetime.getDate().toString() + " now.";
         console.log(str);
 
-        // set the job for 2 secs in the future
+        // set the job to run immediately
         var now = new Date().getTime();
-        var adjustedTime = new Date(now + 2000);
+        var adjustedTime = new Date(now);
 
         addJob(adjustedTime, id);
 

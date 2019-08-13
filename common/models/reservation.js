@@ -123,7 +123,7 @@ module.exports = function (Reservation) {
     });
   };
 
-  Reservation.Promise.reserve = function (id) {
+  Reservation.Promise.login = function (id) {
 
     return new Promise(function (resolve, reject) {
 
@@ -137,8 +137,6 @@ module.exports = function (Reservation) {
                 .then(function (user) {
                   var userid = user.username;
                   var password = user.password;
-                  var time = record.data.time;
-                  var courses = record.data.courses;
 
                   // build the remaining foursome members; 
                   // logged in user is implied as first tee time
@@ -152,30 +150,11 @@ module.exports = function (Reservation) {
                   var teeTimeAPI = new TeeTimeAPI();
 
                   teeTimeAPI.login(userid, password)
-                    .then(function (result) { // login result
-                      return teeTimeAPI.reserve(time, courses, golfers);
-                    })
-                    .then(function (time) {   // reserve result
-                      console.log("Reservation success!");
-
-                      // update our reservation record to indicate we've
-                        // made the reservation
-                        record.processed = true;
-                        record.data.result = {
-                          status: "success",
-                          response: time
-                        };
-
-                        Reservation.Promise.update(record)
-                          .then(function (result) {
-                              resolve(time);
-                            },
-                            function (err) {
-                              reject(err);
-                            });
+                    .then(function (result) { // reserve result
+                        resolve(teeTimeAPI);
                       },
                       function (err) {
-                        console.log("Error: " +err);
+                        console.log("Error: " + err);
 
                         // update our reservation record to indicate we've
                         // processed the record, but there was an error
@@ -194,6 +173,77 @@ module.exports = function (Reservation) {
                             });
                       });
                 });
+
+            },
+            function (err) {
+              reject(err);
+            });
+      },
+      function (err) {
+        reject(err);
+      })
+
+  };
+
+
+  Reservation.Promise.reserve = function (id, teeTimeAPI) {
+
+    return new Promise(function (resolve, reject) {
+
+        Reservation.Promise.findById(id)
+          .then(function (record) {
+
+              var time = record.data.time;
+              var courses = record.data.courses;
+
+              // build the remaining foursome members; 
+              // logged in user is implied as first tee time
+              var golfers = [];
+
+              for (var i = 0; i < record.data.golfers.length; i++) {
+                var golfer = record.data.golfers[i];
+                golfers.push(golfer);
+              }
+
+              teeTimeAPI.reserve(time, courses, golfers)
+                .then(function (time) { // reserve result
+                    console.log("Reservation success!");
+
+                    // update our reservation record to indicate we've
+                    // made the reservation
+                    record.processed = true;
+                    record.data.result = {
+                      status: "success",
+                      response: time
+                    };
+
+                    Reservation.Promise.update(record)
+                      .then(function (result) {
+                          resolve(time);
+                        },
+                        function (err) {
+                          reject(err);
+                        });
+                  },
+                  function (err) {
+                    console.log("Error: " + err);
+
+                    // update our reservation record to indicate we've
+                    // processed the record, but there was an error
+                    record.processed = true;
+                    record.data.result = {
+                      status: "error",
+                      response: err
+                    };
+
+                    Reservation.Promise.update(record)
+                      .then(function (result) {
+                          reject(err);
+                        },
+                        function (err) {
+                          reject(err);
+                        });
+                  });
 
             },
             function (err) {
