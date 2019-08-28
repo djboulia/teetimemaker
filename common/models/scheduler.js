@@ -56,31 +56,36 @@ module.exports = function (Scheduler) {
    * @param {String} id model id for this reservation
    */
   var addJob = function (time, id) {
+    const ONE_SECOND = 1000;
+    const ONE_MINUTE = 60 * ONE_SECOND;
+
     let timeToLogin = time.getTime();
-    timeToLogin -= 60 * 1000; // go back 1 minute
+    timeToLogin -= ONE_MINUTE; // log in a minute early
 
     const now = Date.now();
     if (timeToLogin <= now) {
       // don't set a cron job in the past, just make it a second in the future
       console.log("login cron job would be in the past, adjusting to run immediately.");
-      timeToLogin = now + 1000; 
+      timeToLogin = now + ONE_SECOND; 
+      time = new Date(now + ONE_MINUTE);
     }
 
     var job = new CronJob(new Date(timeToLogin), function () {
+        const startTime = Date.now();
         var Reservation = app.models.Reservation.Promise;
 
         Reservation.login(id)
           .then(function (session) {
 
             const now = Date.now();
-            const timeMs = time.getTime();
+            const elapsed = now - startTime;
 
-            if (now >= timeMs) {
+            if (elapsed >= ONE_MINUTE) {
               // took us more than a minute to login, just trigger the reservation now
-              time = new Date(now + 1000); // run one second from now
+              time = new Date(now + ONE_SECOND); // run one second from now
               console.log("logged in, making reservation in 1 second.");
             } else {
-              const secsLeft = (timeMs - now)/1000;
+              const secsLeft = (ONE_MINUTE - elapsed)/1000;
               console.log("logged in, making reservation in " + secsLeft + " seconds.");
             }
 
@@ -131,6 +136,7 @@ module.exports = function (Scheduler) {
 
         // set the job to run immediately
         var now = new Date().getTime();
+        // var now = new Date().getTime() + (1500 * 60); // TEST
         var adjustedTime = new Date(now);
 
         addJob(adjustedTime, id);
