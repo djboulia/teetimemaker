@@ -1,0 +1,26 @@
+.course {
+  opacity: 1.0;
+  box-sizing: border-box;
+  transition: height 250ms 0ms, opacity 250ms 250ms;
+}
+
+.course.remove {
+  border: solid 1px #2bbbad;
+  transition: height 250ms 250ms, opacity 250ms 0ms;
+  opacity: 0.0;
+  height: 0px;
+}
+
+.course.add {
+  border: solid 1px #2bbbad;
+  box-sizing: border-box;
+  transition: height 250ms 0ms, opacity 250ms 250ms;
+}
+
+.display-block {
+  display: block;
+}
+
+.display-none {
+  display: none;
+}
