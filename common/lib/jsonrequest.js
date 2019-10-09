@@ -1,6 +1,6 @@
-// 
-// wrap a basic REST request over HTTP and format in/out values in JSON
-//
+/**
+ * wrap a basic REST request over HTTP and format in/out values in JSON
+ */
 var request = require('request');
 
 var JsonRequest = function (url) {

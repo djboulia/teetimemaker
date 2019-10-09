@@ -42,11 +42,13 @@ var updateMemberRecord = function (record, username, password, name, id) {
   return record;
 };
 
-//
-// extract the relevant PWCC credentials from the database
-// record.  this decrypts the password and only returns the
-// stuff relevant for PWCC login
-//
+/**
+ * extract the relevant PWCC credentials from the database
+ * record.  this decrypts the password and only returns the
+ * stuff relevant for PWCC login
+ * 
+ * @param {Object} record holds user data from the database
+ */
 var userCredentialsFromRecord = function (record) {
   var obj = {};
 
@@ -397,17 +399,22 @@ module.exports = function (Member) {
         });
   };
 
+  /**
+   * check the db to see if we have a record for this username
+   * --> reject if no existing record exists
+   *     then go get the name/id for this logged in user
+   * (validates login, gives us the name/id info
+   * --> reject if fails
+   * encrypt the password
+   * update the record in our backend database
+   * return success
+   */
   Member.updateMember = function (username, password, id, cb) {
-    // check the db to see if we have a record for this username
-    // --> reject if no existing record exists
-    // then go get the name/id for this logged in user
-    // (validates login, gives us the name/id info
-    // --> reject if fails
-    // encrypt the password
-    // update the record in our backend database
-    // return success
+    if (!id) {
+      cb('Not authenticated.  Login first.');
+      return;
+    }
 
-    var User = app.models.User;
 
     Member.Promise.findById(id)
       .then(function (record) {
@@ -445,15 +452,16 @@ module.exports = function (Member) {
         });
   };
 
+  /**
+   *     go get this record from the back end db
+   * no record? --> fail
+   * validate the username/password match
+   * --> fail if false
+   * create a username to represent this user
+   * save this user's info??
+   * return the token for future invocations
+   */
   Member.login = function (username, password, cb) {
-
-    // go get this record from the back end db
-    // no record? --> fail
-    // validate the username/password match
-    // --> fail if false
-    // create a username to represent this user
-    // save this user's info??
-    // return the token for future invocations
 
     Member.Promise.findByUsername(username)
       .then(function (record) {
@@ -505,7 +513,10 @@ module.exports = function (Member) {
 
   Member.search = function (lastname, id, cb) {
 
-    var User = app.models.User;
+    if (!id) {
+      cb('Not authenticated.  Login first.');
+      return;
+    }
 
     Member.Promise.findById(id)
       .then(function (record) {

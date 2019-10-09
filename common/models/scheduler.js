@@ -1,18 +1,20 @@
 'use strict';
 
-//
-// handles scheduling of tee times by setting a cron job to fire at the 
-// appropriate time to invoke the TeeTimeAPI to book the time
-//
-
 var CronJob = require('cron').CronJob;
-
 var TeeTime = require('../lib/teetime.js');
 
+/**
+ * handles scheduling of tee times by setting a cron job to fire at the 
+ * appropriate time to invoke the TeeTimeAPI to book the time
+ */
 module.exports = function (Scheduler) {
 
   var app = require('../../server/server');
 
+  /**
+   * keep a list of the active cron jobs so we can delete 
+   * previously scheduled tee times
+   */
   var jobs = [];
 
   /**
@@ -29,12 +31,12 @@ module.exports = function (Scheduler) {
         var Reservation = app.models.Reservation.Promise;
 
         Reservation.reserve(id, session)
-        .then(function (result) {
-            console.log(result);
-          },
-          function (err) {
-            console.log(err);
-          });
+          .then(function (result) {
+              console.log(result);
+            },
+            function (err) {
+              console.log(err);
+            });
       },
       function () {
         /* This function is executed when the job stops */
@@ -66,7 +68,7 @@ module.exports = function (Scheduler) {
     if (timeToLogin <= now) {
       // don't set a cron job in the past, just make it a second in the future
       console.log("login cron job would be in the past, adjusting to run immediately.");
-      timeToLogin = now + ONE_SECOND; 
+      timeToLogin = now + ONE_SECOND;
       time = new Date(now + ONE_MINUTE);
     }
 
@@ -85,7 +87,7 @@ module.exports = function (Scheduler) {
               time = new Date(now + ONE_SECOND); // run one second from now
               console.log("logged in, making reservation in 1 second.");
             } else {
-              const secsLeft = (ONE_MINUTE - elapsed)/1000;
+              const secsLeft = (ONE_MINUTE - elapsed) / 1000;
               console.log("logged in, making reservation in " + secsLeft + " seconds.");
             }
 
@@ -98,10 +100,10 @@ module.exports = function (Scheduler) {
 
       },
       function () {
-        /* This function is executed when the job stops */
+        // This function is executed when the job stops
       },
-      true, /* Start the job right now */
-      'America/New_York' /* Time zone of this job. */
+      true, // Start the job right now
+      'America/New_York' // Time zone of this job.
     );
 
     job.start();
@@ -111,10 +113,18 @@ module.exports = function (Scheduler) {
     jobs[id] = job;
   };
 
-  //
-  // make the teetime at the appropriate time
-  //
-  Scheduler.add = function (record) {
+  /**
+   * determine what to do with this tee time.  Three options:
+   * 
+   * 1) For those in the past, we do nothing as the tee time already happened.
+   * 
+   * 2) For reservations that could be made now, kick off a job to
+   *    schedule it.
+   * 
+   * 3) For those where the tee sheet isn't open yet, schedule a 
+   *    future job to make the tee time.
+   */
+  var scheduleTeeTime = function (record) {
 
     return new Promise(function (resolve, reject) {
 
@@ -156,11 +166,10 @@ module.exports = function (Scheduler) {
 
   };
 
-
-  //
-  // when the server is first started, we look in the database
-  // for existing reservation records and load them all into the scheduler
-  //
+  /**
+   * when the server is first started, we look in the database
+   * for existing reservation records and load them all into the scheduler
+   */
   Scheduler.init = function () {
 
     return new Promise(function (resolve, reject) {
@@ -191,7 +200,7 @@ module.exports = function (Scheduler) {
             console.log("record: " + JSON.stringify(record));
 
             // add it as a future job
-            promises.push(Scheduler.add(record));
+            promises.push(scheduleTeeTime(record));
 
             // wait for all of the promises to finish
             Promise.all(promises)
@@ -214,11 +223,11 @@ module.exports = function (Scheduler) {
   };
 
 
-  //
-  //  These are the methods to support the remote API
-  //
+  /**
+   * These are the methods to support the remote API
+   */
   Scheduler.remoteMethod(
-    'apiCreate', {
+    'create', {
       http: {
         path: '/',
         verb: 'post',
@@ -269,7 +278,7 @@ module.exports = function (Scheduler) {
   );
 
   Scheduler.remoteMethod(
-    'apiList', {
+    'list', {
       http: {
         path: '/',
         verb: 'get',
@@ -301,7 +310,7 @@ module.exports = function (Scheduler) {
   );
 
   Scheduler.remoteMethod(
-    'apiDelete', {
+    'delete', {
       http: {
         path: '/:id',
         verb: 'delete',
@@ -339,7 +348,7 @@ module.exports = function (Scheduler) {
   );
 
   Scheduler.remoteMethod(
-    'apiListHistory', {
+    'listHistory', {
       http: {
         path: '/history',
         verb: 'get',
@@ -372,13 +381,19 @@ module.exports = function (Scheduler) {
 
 
 
-  Scheduler.apiCreate = function (time, courses, golfers, id, cb) {
+  /**
+   * get user credentials
+   * create record in the db for this reservation
+   * add it to the scheduler
+   */
+  Scheduler.create = function (time, courses, golfers, id, cb) {
 
-    // get user credentials
-    // create record in the db for this reservation
-    // add it to the scheduler
+    if (!id) {
+      cb("Not authenticated.  Login first.");
+      return;
+    }
 
-    console.log("Scheduler.apiCreate with id " + id);
+    console.log("Scheduler.create with id " + id);
 
     var record = {
       data: {
@@ -404,7 +419,7 @@ module.exports = function (Scheduler) {
 
     Reservation.create(record)
       .then(function (result) {
-          Scheduler.add(result)
+          scheduleTeeTime(result)
             .then(function (str) {
                 cb(null, str);
               },
@@ -417,9 +432,17 @@ module.exports = function (Scheduler) {
         });
   };
 
-  Scheduler.apiList = function (id, cb) {
+  /**
+   * show all upcoming reservations for this member
+   */
+  Scheduler.list = function (id, cb) {
 
-    console.log("Scheduler.apiList for member " + id);
+    console.log("Scheduler.list for member " + id);
+
+    if (!id) {
+      cb("Not authenticated.  Login first.");
+      return;
+    }
 
     // find any reservations that have not yet been processed
     var Reservation = app.models.Reservation.Promise;
@@ -477,8 +500,16 @@ module.exports = function (Scheduler) {
       });
   };
 
-  Scheduler.apiDelete = function (id, memberId, cb) {
-    console.log("Scheduler.apiDelete with id " + id);
+  /**
+   * delete a pending reservations for a member
+   */
+  Scheduler.delete = function (id, memberId, cb) {
+    console.log("Scheduler.delete with id " + id);
+
+    if (!memberId) {
+      cb("Not authenticated.  Login first.");
+      return;
+    }
 
     // find the record, make sure this member is the owner
     var Reservation = app.models.Reservation.Promise;
@@ -541,9 +572,17 @@ module.exports = function (Scheduler) {
 
   };
 
-  Scheduler.apiListHistory = function (id, cb) {
+  /**
+   * show all past reservations for this member
+   */
+  Scheduler.listHistory = function (id, cb) {
 
-    console.log("Scheduler.apiListHistory for member " + id);
+    console.log("Scheduler.listHistory for member " + id);
+
+    if (!id) {
+      cb("Not authenticated.  Login first.");
+      return;
+    }
 
     // find any reservations that have not yet been processed
     var Reservation = app.models.Reservation.Promise;

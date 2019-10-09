@@ -1,8 +1,9 @@
-// TODO: add passing of token info after login
-//
-// wrapper for the tee time service. This runs as a separate REST service
-// the service does the actual booking on the golf club web site
-//
+/**
+ *  TODO: add passing of token info after login
+ * 
+ * wrapper for the tee time service. This runs as a separate REST service
+ * the service does the actual booking on the golf club web site
+ */
 var JsonRequest = require('../jsonrequest.js');
 var MockJsonRequest = require('../mockjsonrequest.js');
 
