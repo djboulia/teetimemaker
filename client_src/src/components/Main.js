@@ -7,7 +7,6 @@ import Logout from './Logout';
 import Reservations from './Reservations';
 import ReservationDetails from './ReservationDetails';
 import AddReservation from './AddReservation';
-import EditReservation from './EditReservation';
 import Server from './Server';
 
 const PrivateRoute = ({
@@ -39,7 +38,6 @@ const Main = () => (
       <PrivateRoute exact path='/logout' component={Logout}/>
       <PrivateRoute exact path='/reservations' component={Reservations}/>
       <PrivateRoute exact path='/reservations/add' component={AddReservation}/>
-      <PrivateRoute exact path='/reservations/edit/:id' component={EditReservation}/>
       <PrivateRoute exact path='/reservations/:id' component={ReservationDetails}/>
     </Switch>
   </main>
