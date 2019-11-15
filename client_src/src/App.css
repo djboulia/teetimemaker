@@ -17,6 +17,17 @@
   transition: height 250ms 0ms, opacity 250ms 250ms;
 }
 
+.disabled {
+  color: #aaaaaa;
+}
+
+.msg.error {
+  color: red;
+}
+.msg {
+  color: blue;
+}
+
 .display-block {
   display: block;
 }

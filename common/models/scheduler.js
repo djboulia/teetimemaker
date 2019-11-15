@@ -12,6 +12,23 @@ module.exports = function (Scheduler) {
   var app = require('../../server/server');
 
   /**
+   * Use this method to extract the access token from the 
+   * http headers.  a valid login token is required to access 
+   * the API methods
+   * 
+   * @param {Object} ctx context object with http headers
+   */
+  const getAccessToken = function (ctx) {
+    var req = ctx && ctx.req;
+    var accessToken = req && req.accessToken;
+    var tokenID = accessToken ? accessToken.id : undefined;
+
+    console.log("tokenID " + JSON.stringify(tokenID));
+    console.log("accessToken " + JSON.stringify(accessToken));
+    return (accessToken) ? accessToken.userId : undefined;
+  };
+
+  /**
    * keep a list of the active cron jobs so we can delete 
    * previously scheduled tee times
    */
@@ -255,15 +272,7 @@ module.exports = function (Scheduler) {
         {
           arg: 'ctx',
           type: 'string',
-          http: function (ctx) {
-            var req = ctx && ctx.req;
-            var accessToken = req && req.accessToken;
-            var tokenID = accessToken ? accessToken.id : undefined;
-
-            console.log("tokenID " + JSON.stringify(tokenID));
-            console.log("accessToken " + JSON.stringify(accessToken));
-            return (accessToken) ? accessToken.userId : undefined;
-          },
+          http: getAccessToken,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -288,18 +297,40 @@ module.exports = function (Scheduler) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: function (ctx) {
-          var req = ctx && ctx.req;
-          var accessToken = req && req.accessToken;
-          var tokenID = accessToken ? accessToken.id : undefined;
-
-          console.log("tokenID " + JSON.stringify(tokenID));
-          console.log("accessToken " + JSON.stringify(accessToken));
-          return (accessToken) ? accessToken.userId : undefined;
-        },
+        http: getAccessToken,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
+
+      returns: {
+        arg: 'records',
+        type: 'array',
+        root: true
+      }
+    }
+  );
+
+  Scheduler.remoteMethod(
+    'get', {
+      http: {
+        path: '/:id',
+        verb: 'get',
+      },
+      description: 'Get the specified reservation.',
+
+      accepts: [{
+          arg: 'id',
+          type: 'string',
+          required: true
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: getAccessToken,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
+        }
+      ],
 
       returns: {
         arg: 'records',
@@ -325,15 +356,7 @@ module.exports = function (Scheduler) {
         {
           arg: 'ctx',
           type: 'string',
-          http: function (ctx) {
-            var req = ctx && ctx.req;
-            var accessToken = req && req.accessToken;
-            var tokenID = accessToken ? accessToken.id : undefined;
-
-            console.log("tokenID " + JSON.stringify(tokenID));
-            console.log("accessToken " + JSON.stringify(accessToken));
-            return (accessToken) ? accessToken.userId : undefined;
-          },
+          http: getAccessToken,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -358,15 +381,7 @@ module.exports = function (Scheduler) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: function (ctx) {
-          var req = ctx && ctx.req;
-          var accessToken = req && req.accessToken;
-          var tokenID = accessToken ? accessToken.id : undefined;
-
-          console.log("tokenID " + JSON.stringify(tokenID));
-          console.log("accessToken " + JSON.stringify(accessToken));
-          return (accessToken) ? accessToken.userId : undefined;
-        },
+        http: getAccessToken,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
@@ -498,6 +513,65 @@ module.exports = function (Scheduler) {
         console.log(err);
         cb(err);
       });
+  };
+
+  /**
+   * get a pending reservations for a member
+   */
+  Scheduler.get = function (id, memberId, cb) {
+    console.log("Scheduler.get with id " + id);
+
+    if (!memberId) {
+      cb("Not authenticated.  Login first.");
+      return;
+    }
+
+    // find the record, make sure this member is the owner
+    var Reservation = app.models.Reservation.Promise;
+
+    Reservation.findById(id)
+      .then(function (record) {
+
+          if (!record || !record.data) {
+            var str = "Reservation with id " + id + " not found.";
+            cb(str);
+            return;
+          }
+
+          if (record.data.member != memberId) {
+            var str = "This reservation not owned by the logged in member.";
+            cb(str);
+            return;
+          }
+
+          var teetime = new TeeTime(record);
+
+          if (!teetime.isTeeSheetOpen()) {
+            // tee time hasn't been booked yet, show reservation data
+            var data = {
+              id: record.id,
+              teetime: teetime.getDate().toString(),
+              scheduled: teetime.getTeeSheetOpenDate().toString(),
+              courses: record.data.courses,
+              golfers: record.data.golfers
+            }
+
+            cb(null, data);
+          } else {
+            // already processed record, show results
+            var data = {
+              id: record.id,
+              teetime: teetime.getDate().toString(),
+              courses: record.data.courses,
+              golfers: record.data.golfers,
+              result: record.data.result
+            }
+            cb(null, data);
+          }
+        },
+        function (err) {
+          cb(err);
+        })
   };
 
   /**

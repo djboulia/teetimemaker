@@ -1,7 +1,6 @@
 import React, {Component} from 'react';
-import axios from 'axios';
 import ReservationItem from './ReservationItem';
-import ServerUrl from './ServerUrl';
+import Server from './Server';
 import { Link } from 'react-router-dom';
 
 class Reservations extends Component {
@@ -17,11 +16,10 @@ class Reservations extends Component {
   }
 
   getTeeTimes() {
-    axios
-      .get(ServerUrl.getUrl('meetups'))
-      .then(response => {
+    Server.schedulerList()
+      .then(data => {
         this.setState({
-          teetimes: response.data
+          teetimes: data
         }, () => {
           //console.log(this.state);
         })
@@ -35,15 +33,26 @@ class Reservations extends Component {
       .state
       .teetimes
       .map((teetime, i) => {
-        return (<ReservationItem key={teetime.id} item={teetime}/>)
+        return (<ReservationItem key={teetime.id} owner={Server.getName()} item={teetime}/>)
       })
 
     return (
       <div>
-        <h1>Reservations</h1>
-        <ul className="collection">
+        <h1>Upcoming Reservations for {Server.getName()}</h1>
+        <table>
+          <thead>
+            <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Golfers</th>
+            <th>Course Preference</th>
+            </tr>
+          </thead>
+          <tbody>
           {teetimes}
-        </ul>
+          </tbody>
+        </table>
+
         <div className="fixed-action-btn">
           <Link to="/reservations/add" className="btn-floating btn-large red">
             <i className="fa fa-plus"></i>

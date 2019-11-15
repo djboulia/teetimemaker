@@ -1,7 +1,11 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {Link} from 'react-router-dom';
-import ServerUrl from './ServerUrl';
+import Server from './Server';
+
+/**
+ * THIS MODULE SHOULD GO AWAY - NO EDIT OF EXISTING RESERVATIONS
+ */
 
 class EditReservation extends Component{
   constructor(props){
@@ -17,34 +21,34 @@ class EditReservation extends Component{
   }
 
   componentWillMount(){
-    this.getMeetupDetails();
+  //  this.getMeetupDetails();
   }
 
-  getMeetupDetails(){
-    let meetupId = this.props.match.params.id;
-    axios.get(ServerUrl.getUrl(`meetups/${meetupId}`))
-    .then(response => {
-      this.setState({
-        id: response.data.id,
-        name: response.data.name,
-        city: response.data.city,
-        address: response.data.address
-      }, () => {
-        console.log(this.state);
-      });
-    })
-    .catch(err => console.log(err));
-    }
+  // getMeetupDetails(){
+  //   let meetupId = this.props.match.params.id;
+  //   axios.get(ServerUrl.getUrl(`meetups/${meetupId}`))
+  //   .then(response => {
+  //     this.setState({
+  //       id: response.data.id,
+  //       name: response.data.name,
+  //       city: response.data.city,
+  //       address: response.data.address
+  //     }, () => {
+  //       console.log(this.state);
+  //     });
+  //   })
+  //   .catch(err => console.log(err));
+  //   }
 
-  editMeetup(newMeetup){
-    axios.request({
-      method:'put',
-      url:ServerUrl.getUrl(`meetups/${this.state.id}`),
-      data: newMeetup
-    }).then(response => {
-      this.props.history.push('/');
-    }).catch(err => console.log(err));
-  }
+  // editMeetup(newMeetup){
+  //   axios.request({
+  //     method:'put',
+  //     url:ServerUrl.getUrl(`meetups/${this.state.id}`),
+  //     data: newMeetup
+  //   }).then(response => {
+  //     this.props.history.push('/');
+  //   }).catch(err => console.log(err));
+  // }
 
   onSubmit(e){
     const newMeetup = {
@@ -52,7 +56,7 @@ class EditReservation extends Component{
       city: this.refs.city.value,
       address: this.refs.address.value
     }
-    this.editMeetup(newMeetup);
+ //    this.editMeetup(newMeetup);
     e.preventDefault();
   }
 

@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Input, Table} from 'react-materialize';
+import {Checkbox, Table} from 'react-materialize';
 import '../App.css';
 
 class CoursePicker extends Component {
@@ -11,7 +11,7 @@ class CoursePicker extends Component {
       .handleChange
       .bind(this);
 
-    this.transitionTime = 250; // ms
+    this.transitionTime = 200; // ms
 
     this.state = {
       courses: [
@@ -142,13 +142,43 @@ class CoursePicker extends Component {
       }
     }
 
-    this.setState(() => {
-      return {courses: courses};
-    });
-
+    this.stateChange({courses: courses});
   }
 
-  // return a human readable version of the sort order
+  /**
+   * funnel all state changes through this method so that 
+   * we fire an appropriate onChange event when state changes
+   * 
+   * @param {*} state new state to set
+   */
+  stateChange(state) {
+    this.setState(state, () => {
+      if (this.props.onChange) {
+        this.props.onChange(this.selectedCourses());
+      }
+    });
+  }
+
+  /**
+   * return an array of selected course names
+   */
+  selectedCourses() {
+    const courses = this.state.courses;
+    const selected = [];
+
+    for (let i=0; i<courses.length; i++) {
+      const course = courses[i];
+      if (course.selected === true) {
+        selected.push(course.name);
+      }
+    }
+
+    return selected;
+  }
+
+  /**
+   * return a human readable version of the sort order
+   */
   order(selected, index) {
     let val = "";
 
@@ -200,10 +230,9 @@ class CoursePicker extends Component {
 
                 return <tr key={course.key} className={rowClass}>
                   <td>
-                    <Input
+                    <Checkbox
                       name='group1'
-                      onClick={course.handleChange}
-                      type='checkbox'
+                      onChange={course.handleChange}
                       value={course.key}
                       checked={course.selected}
                       label=' '/>

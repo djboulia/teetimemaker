@@ -1,7 +1,25 @@
 import React, {Component, Fragment} from 'react';
-import {Input} from 'react-materialize';
+import {Select} from 'react-materialize';
 
 class TeeTimePicker extends Component {
+  constructor(props) {
+    super(props);
+
+    this.handleSelectionChanged = this
+    .handleSelectionChanged
+    .bind(this);
+
+  }
+
+  handleSelectionChanged(e) {
+    console.log("TeeTimePicker: selection changed: " + e.target.value);
+
+    if (this.props.onChange) {
+      this
+      .props
+      .onChange(e.target.value);
+    }
+  }
 
   getTimes() {
     let hours,
@@ -44,19 +62,23 @@ class TeeTimePicker extends Component {
 
   render() {
 
-    let times = this.getTimes();
-    let defaultValue = (this.props.defaultValue)
+    const times = this.getTimes();
+    const defaultValue = (this.props.defaultValue)
       ? this.props.defaultValue
       : times[0];
 
     return (
-      <Input type='select' label={this.props.label} defaultValue={defaultValue}>
+      <Select 
+        label={this.props.label} 
+        defaultValue={defaultValue}
+        onChange={this.handleSelectionChanged}
+        >
         {times.map(item => (
           <Fragment key={item}>
             <option value={item}>{item}</option>
           </Fragment>
         ))}
-      </Input>
+      </Select>
     )
   }
 }

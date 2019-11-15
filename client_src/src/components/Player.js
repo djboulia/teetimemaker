@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Button, Input, Modal, Row, Collection, CollectionItem} from 'react-materialize';
+import {Button, TextInput, Select, Modal, Row, Collection, CollectionItem} from 'react-materialize';
 import '../App.css';
 
 class PlayerSearch {
@@ -55,7 +55,7 @@ class PlayerSearch {
 
 let defaultSearchState = function() {
   return {
-    searchtext: "Type Last Name Here",
+    searchtext: "",
     results: [],
     selected: ""
   };
@@ -105,9 +105,12 @@ class Player extends Component {
 
   handleSelectionChanged(e) {
     console.log("Player: selection changed");
-    this
+
+    if (this.props.onChange) {
+      this
       .props
       .onChange(e);
+    }
   }
 
   handleModalClosed() {
@@ -194,12 +197,23 @@ class Player extends Component {
 
       if (search.selected === item.id) {
         items.push(
-          <CollectionItem key={i} id={item.id} onClick={this.handleItemClicked} active>{item.name}</CollectionItem>
+          <CollectionItem 
+            key={i} 
+            id={item.id} 
+            onClick={this.handleItemClicked} 
+            className='active'>
+              {item.name}
+          </CollectionItem>
         );
   
       } else {
         items.push(
-          <CollectionItem key={i} id={item.id} onClick={this.handleItemClicked}>{item.name}</CollectionItem>
+          <CollectionItem 
+            key={i} 
+            id={item.id} 
+            onClick={this.handleItemClicked}>
+              {item.name}
+          </CollectionItem>
         );
         }
     }
@@ -217,7 +231,7 @@ class Player extends Component {
     if (this.props.self) {
       input = (
         <div>
-          <Input s={6} id={this.props.id} type="text" defaultValue={this.props.name} 
+          <TextInput s={6} id={this.props.id} type="text" defaultValue={this.props.name} 
                 onChange={this.handleModalInputChanged} disabled/>
         </div>
       )
@@ -227,14 +241,13 @@ class Player extends Component {
       // editable input field has select-able options and a search button
       input = (
         <div>
-          <Input
+          <Select
             s={6}
             id={this.props.id}
-            type="select"
             value={defaultValue}
             onChange={this.handleSelectionChanged}>
             {this.createSelectItems()}
-          </Input>
+          </Select>
 
           <div className="col input-field s6">
             <Modal
@@ -244,13 +257,13 @@ class Player extends Component {
               actions={< div > <Button modal="close" waves="light" onClick={this.handleModalClosed}>OK</Button> < Button modal = "close" waves = "light"  onClick={this.handleModalReset} className = "red darken-2" > Cancel </Button> </div >}>
               <p>Type the name of the member to search for:</p>
 
-              <Input
+              <TextInput
                 s={6}
                 id={"searchtext"}
-                type="text"
+                placeholder="Type Last Name Here"
                 value={this.state.search.searchtext}
                 onChange={this.handleModalInputChanged}>
-              </Input>
+              </TextInput>
 
               <Collection
                 id={"searchresults"}>

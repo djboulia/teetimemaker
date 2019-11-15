@@ -24,12 +24,11 @@ let validBuddy = function (buddy, player, foursome) {
   return true;
 }
 
-// return true if the buddy exists in our list,
-// false otherwise
+// return true if the buddy exists in our list, false otherwise
 let isBuddy = function (player, buddies) {
   let found = false;
 
-  for (let i=0; i<buddies.length; i++) {
+  for (let i = 0; i < buddies.length; i++) {
     let buddy = buddies[i];
 
     if (buddy.id === player.id) {
@@ -44,7 +43,7 @@ let isBuddy = function (player, buddies) {
 let isInFoursome = function (player, foursome) {
   let found = false;
 
-  for (let i=0; i<foursome.length; i++) {
+  for (let i = 0; i < foursome.length; i++) {
     let golfer = foursome[i];
 
     if (golfer.id === player.id) {
@@ -56,12 +55,10 @@ let isInFoursome = function (player, foursome) {
   return found;
 }
 
-
 let available = {
   name: "Available",
   id: "0000"
 };
-
 
 class PlayerPicker extends Component {
 
@@ -69,13 +66,11 @@ class PlayerPicker extends Component {
     super(props);
 
     this.state = {
+      owner: props.owner, // owner of this tee time is always the first player
 
       players: [
-        {
-          name: "Carter Boulia",
-          id: "1234"
-        }
       ],
+
       buddies: [
         {
           name: "Carter Boulia",
@@ -115,16 +110,30 @@ class PlayerPicker extends Component {
     return available;
   }
 
+  /**
+   * funnel all state changes through this method so that 
+   * we fire an appropriate onChange event when state changes
+   * 
+   * @param {*} state new state to set
+   */
+  stateChange(state) {
+    this.setState(state, () => {
+      if (this.props.onChange) {
+        this.props.onChange(this.state.players);
+      }
+    });
+  }
+
   handleSearchChanged(result) {
     console.log("handleSearchChanged : " + JSON.stringify(result));
 
     let buddies = this.state.buddies;
     let players = this.state.players;
 
-    // search result could mean that a totally new player is added to the list
-    // look for that here, add it to our "buddies" list if so
+    // search result could mean that a totally new player is added to the list look
+    // for that here, add it to our "buddies" list if so
     if (!isBuddy(result, buddies)) {
-      buddies.push(result);      
+      buddies.push(result);
     }
 
     // if the searched for player isn't in the foursome, add them
@@ -133,8 +142,8 @@ class PlayerPicker extends Component {
       players.push(result);
     }
 
-    this.setState({buddies: buddies, players: players});
-     
+    this.stateChange({buddies: buddies, players: players});
+
   }
 
   handleSelectionChanged(e) {
@@ -173,7 +182,7 @@ class PlayerPicker extends Component {
 
         console.log("players: " + JSON.stringify(players));
 
-        this.setState({players: players});
+        this.stateChange({players: players});
       }
     }
   }
@@ -183,7 +192,7 @@ class PlayerPicker extends Component {
     let items = [];
 
     items.push(available);
-  
+
     for (let i = 0; i < buddies.length; i++) {
       var buddy = buddies[i];
 
@@ -199,11 +208,11 @@ class PlayerPicker extends Component {
     console.log("PlayerPicker: render");
     console.log("players: " + JSON.stringify(this.state.players));
 
-    let players = this.state.players;
-    let buddies = this.state.buddies;
-    let getChoices = this.getChoices;
-    let handleSelectionChanged = this.handleSelectionChanged;
-    let handleSearchChanged = this.handleSearchChanged;
+    const players = this.state.players;
+    const buddies = this.state.buddies;
+    const getChoices = this.getChoices;
+    const handleSelectionChanged = this.handleSelectionChanged;
+    const handleSearchChanged = this.handleSearchChanged;
 
     let foursome = [];
 
@@ -237,7 +246,7 @@ class PlayerPicker extends Component {
             <tr>
               <td>1</td>
               <td>
-                <Player name="You" self="true"></Player>
+                <Player name={this.state.owner} self="true"></Player>
               </td>
             </tr>
 

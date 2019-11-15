@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {Redirect} from 'react-router-dom'
-import fakeAuth from './fakeAuth';
+import Server from './Server';
 
 class Home extends Component {
   render() {
@@ -10,9 +10,11 @@ class Home extends Component {
       }
     }
 
-    if (fakeAuth.isAuthenticated === true) {
-      console.log("redirecting...");
+    if (Server.isLoggedIn() === true) {
+      console.log("redirecting... to " + from.pathname);
       return <Redirect to={from}/>
+    } else {
+      console.log("Not logged in");
     }
 
     return (

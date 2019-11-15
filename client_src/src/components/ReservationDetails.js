@@ -1,55 +1,101 @@
-import React, { Component } from 'react';
-import axios from 'axios';
+import React, {Component} from 'react';
 import {Link} from 'react-router-dom';
-import ServerUrl from './ServerUrl';
+import Server from './Server';
+import Formatter from '../utils/Formatter';
 
-class MeetupDetails extends Component{
-  constructor(props){
+class ReservationDetails extends Component {
+  constructor(props) {
     super(props);
+
     this.state = {
-      details:''
+      details: undefined
     }
   }
 
-  componentWillMount(){
-    this.getMeetup();
+  componentWillMount() {
+    this.getReservation();
   }
 
-  getMeetup(){
+  getReservation() {
     let meetupId = this.props.match.params.id;
-    axios.get(ServerUrl.getUrl(`meetups/${meetupId}`))
-    .then(response => {
-      this.setState({details: response.data}, () => {
-        console.log(this.state);
+
+    Server
+      .schedulerGet(meetupId)
+      .then((data) => {
+        this.setState({details: data});
       })
-  })
-  .catch(err => console.log(err));
+      .catch(err => console.log(err));
+
   }
 
-  onDelete(){
+  onDelete() {
     let meetupId = this.state.details.id;
-    axios.delete(ServerUrl.getUrl(`meetups/${meetupId}`))
-      .then(response => {
-        this.props.history.push('/');
-      }).catch(err => console.log(err));
+
+    Server
+      .schedulerDelete(meetupId)
+      .then((data) => {
+        this
+          .props
+          .history
+          .push('/');
+      })
+      .catch(err => console.log(err));
+
   }
 
-  render(){
-    return (
-     <div>
-       <br />
-       <Link className="btn grey" to="/">Back</Link>
-       <h1>{this.state.details.name}</h1>
-       <ul className="collection">
-        <li className="collection-item">City: {this.state.details.city}</li>
-        <li className="collection-item">Address: {this.state.details.address}</li>
-        </ul>
-        <Link className="btn" to={`/reservations/edit/${this.state.details.id}`}> Edit</Link>
+  render() {
 
-        <button onClick={this.onDelete.bind(this)} className="btn red right">Delete</button>
+    if (!this.state.details) {
+      return <div>Loading...</div>
+    }
+
+    console.log("details " + JSON.stringify(this.state.details));
+
+    const teeTime = Formatter.teeTime(this.state.details.teetime);
+    const reserveTime = Formatter.teeTime(this.state.details.scheduled);
+    const courses = Formatter.courses(this.state.details.courses);
+    const golfers = Formatter.golfers(Server.getName(), this.state.details.golfers);
+
+    return (
+      <div>
+        <br/>
+        <Link className="btn" to="/">Back</Link>
+        <h1>Scheduled Reservation for {Server.getName()}</h1>
+        <ul className="collection">
+          <li className="collection-item avatar">
+            <i className="material-icons circle green">event</i>
+            <span className="title">Tee Time</span>
+            <p> {teeTime.time} on {teeTime.date} </p>
+          </li>
+
+          <li className="collection-item avatar">
+            <i className="material-icons circle blue">group</i>
+            <span className="title">Golfers</span>
+            <p> {golfers}</p>
+          </li>
+
+          <li className="collection-item avatar">
+            <i className="material-icons circle green">location_on</i>
+            <span className="title">Preferred Courses</span>
+            <p> {courses}</p>
+          </li>
+
+          <li className="collection-item avatar">
+            <i className="material-icons circle blue">alarm</i>
+            <span className="title">Tee sheet opens</span>
+            <p> {reserveTime.date} </p>
+          </li>
+
+        </ul>
+
+        <button
+          onClick={this
+          .onDelete
+          .bind(this)}
+          className="btn red right">Delete</button>
       </div>
     )
   }
 }
 
-export default MeetupDetails;
+export default ReservationDetails;

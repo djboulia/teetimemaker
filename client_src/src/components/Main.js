@@ -3,11 +3,12 @@ import {Switch, Route, Redirect} from 'react-router-dom';
 import About from './About';
 import Home from './Home';
 import Login from './Login';
+import Logout from './Logout';
 import Reservations from './Reservations';
 import ReservationDetails from './ReservationDetails';
 import AddReservation from './AddReservation';
 import EditReservation from './EditReservation';
-import fakeAuth from './fakeAuth';
+import Server from './Server';
 
 const PrivateRoute = ({
   component: Component,
@@ -16,7 +17,7 @@ const PrivateRoute = ({
 
   <Route
     {...rest}
-    render={(props) => (fakeAuth.isAuthenticated === true
+    render={(props) => (Server.isLoggedIn() === true
     ? <Component {...props}/>
     : <Redirect
       to={{
@@ -35,6 +36,7 @@ const Main = () => (
       <Route exact path='/login' component={Login}/>
       <Route exact path='/' component={Home}/>
       <PrivateRoute exact path='/about' component={About}/>
+      <PrivateRoute exact path='/logout' component={Logout}/>
       <PrivateRoute exact path='/reservations' component={Reservations}/>
       <PrivateRoute exact path='/reservations/add' component={AddReservation}/>
       <PrivateRoute exact path='/reservations/edit/:id' component={EditReservation}/>
