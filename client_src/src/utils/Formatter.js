@@ -43,7 +43,7 @@ const Formatter = {
     let golferText = owner; // reservation owner is always the first golfer
 
     for (var i = 0; i < golfers.length; i++) {
-      golferText += ", " + golfers[i];
+      golferText += ", " + golfers[i].name;
     }
 
     return golferText;

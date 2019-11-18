@@ -4,7 +4,7 @@ import '../App.css';
 import Player from './Player';
 
 let validBuddy = function (buddy, player, foursome) {
-  if (buddy.id === player.id) {
+  if (buddy.id.toString() === player.id.toString()) {
     // always include the active player in the list
     return true;
   }
@@ -13,9 +13,9 @@ let validBuddy = function (buddy, player, foursome) {
   // buddies choices
 
   for (let i = 0; i < foursome.length; i++) {
-    var currentPlayer = foursome[i];
+    const currentPlayer = foursome[i];
 
-    if (buddy.id === currentPlayer.id) {
+    if (buddy.id.toString() === currentPlayer.id.toString()) {
       return false;
     }
 
@@ -29,9 +29,9 @@ let isBuddy = function (player, buddies) {
   let found = false;
 
   for (let i = 0; i < buddies.length; i++) {
-    let buddy = buddies[i];
+    const buddy = buddies[i];
 
-    if (buddy.id === player.id) {
+    if (buddy.id.toString() === player.id.toString()) {
       found = true;
       break;
     }
@@ -44,9 +44,9 @@ let isInFoursome = function (player, foursome) {
   let found = false;
 
   for (let i = 0; i < foursome.length; i++) {
-    let golfer = foursome[i];
+    const golfer = foursome[i];
 
-    if (golfer.id === player.id) {
+    if (golfer.id.toString() === player.id.toString()) {
       found = true;
       break;
     }
@@ -72,19 +72,6 @@ class PlayerPicker extends Component {
       ],
 
       buddies: [
-        {
-          name: "Carter Boulia",
-          id: "1234"
-        }, {
-          name: "Lauren Boulia",
-          id: "5678"
-        }, {
-          name: "Ryder Boulia",
-          id: "9012"
-        }, {
-          name: "Kirsten Boulia",
-          id: "3456"
-        }
       ]
     };
 
@@ -99,10 +86,12 @@ class PlayerPicker extends Component {
   }
 
   findPlayer(id) {
-    for (let i = 0; i < this.state.buddies.length; i++) {
-      let buddy = this.state.buddies[i];
+    console.log("findPlayer: buddies " + JSON.stringify(this.state.buddies));
 
-      if (buddy.id === id) {
+    for (let i = 0; i < this.state.buddies.length; i++) {
+      const buddy = this.state.buddies[i];
+
+      if (buddy.id.toString() === id.toString()) {
         return buddy;
       }
     }
@@ -163,6 +152,7 @@ class PlayerPicker extends Component {
         console.log(JSON.stringify(this.state.players));
 
         let player = this.findPlayer(e.target.value);
+        console.log("found player: " + JSON.stringify(player));
 
         let players = this.state.players;
         if (id >= players.length) {

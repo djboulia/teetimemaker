@@ -1,30 +1,12 @@
 import React, {Component} from 'react';
 import {Button, TextInput, Modal, Collection, CollectionItem} from 'react-materialize';
+import Server from './Server';
 import '../App.css';
 
-/**
- * props:
- *  onClose - function - if provided, will be called with the result of the search
- */
 class PlayerSearch {
   constructor(text) {
     this.text = text;
     this.canceled = false;
-    this.cb = null;
-
-    // just make up some results for now
-    this.results = [ 
-      { id: "0001", name: "Don Boulia" },
-      { id: "3456", name: "Kirsten Boulia" },
-      { id: "1234", name: "Carter Boulia" },
-      { id: "5678", name: "Lauren Boulia" },
-      { id: "9012", name: "Ryder Boulia" },
-      { id: "000123", name: "Mike Perhay" },
-      { id: "000456", name: "Aundrea Perhay" }
-    ]
-
-    this.tick = this.tick.bind(this);
-  
   }
 
   cancel() {
@@ -33,27 +15,15 @@ class PlayerSearch {
   }
 
   doSearch(cb) {
-    this.cb = cb;
 
-    // just put in a delay for now, but eventually this will
-    // kick off a call to the web back end
-    this.timer = setTimeout(this.tick, 1000);
-  }
+    Server.memberSearch(this.text)
+    .then((results) => {
+      cb(results);
+    })
+    .catch((e) => {
+      console.log("error on search: " + JSON.stringify(e));
+    })
 
-  tick() {
-    if (this.cb) {
-      let results = [];
-
-      for (let i=0; i<this.results.length; i++) {
-        let result = this.results[i];
-
-        if (result.name.toLowerCase().indexOf(this.text.toLowerCase()) >=0) {
-          results.push(result);
-        }
-      }
-
-      this.cb(results);
-    }
   }
 }
 
@@ -61,10 +31,14 @@ let defaultSearchState = function() {
   return {
     searchtext: "",
     results: [],
-    selected: ""
+    selected: undefined
   };
 }
 
+/**
+ * props:
+ *  onClose - function - if provided, will be called with the result of the search
+ */
 class PlayerSearchModal extends Component {
 
   constructor(props) {
@@ -98,8 +72,11 @@ class PlayerSearchModal extends Component {
   }
 
   searchComplete(results) {
+    console.log("searchComplete: results: " + JSON.stringify(results));
+
     let search = this.state.search;
     search.results = results;
+    search.selected = undefined;  // new search result -- remove any current selection
 
     this.setState({search: search, currentSearch: null});
   }
@@ -159,7 +136,7 @@ class PlayerSearchModal extends Component {
   handleItemClicked(e) {
     console.log("Player: item clicked " + e.target.id);
     let search = this.state.search;
-    search.selected = e.target.id;
+    search.selected = Number.parseInt(e.target.id);
 
     this.setState( {search: search} );
 
@@ -167,39 +144,72 @@ class PlayerSearchModal extends Component {
   }
 
   createSearchResults() {
-    let items = [];
-    let search = this.state.search;
+    const items = [];
+    const search = this.state.search;
+    const currentSearch = this.state.currentSearch;
 
-    for (let i = 0; i < search.results.length; i++) {
-      var item = search.results[i];
 
-      if (search.selected === item.id) {
-        items.push(
-          <CollectionItem 
-            key={i} 
-            id={item.id} 
-            onClick={this.handleItemClicked} 
-            className='active'>
-              {item.name}
-          </CollectionItem>
-        );
+    if (currentSearch) {
+      // search in progress, indicate that to the user
+      items.push(
+        <CollectionItem 
+          key={0} 
+          id={0}>
+            {"Searching..."}
+        </CollectionItem>
+      );
+    } else if (search.results.length ===0) {
+      // search complete, no results
+      items.push(
+        <CollectionItem 
+          key={0} 
+          id={0}
+          disabled="true">
+            {"No results"}
+        </CollectionItem>
+      );
+    } else {
+      // display search results
+      for (let i = 0; i < search.results.length; i++) {
+        var item = search.results[i];
   
-      } else {
-        items.push(
-          <CollectionItem 
-            key={i} 
-            id={item.id} 
-            onClick={this.handleItemClicked}>
-              {item.name}
-          </CollectionItem>
-        );
-        }
+        if (search.selected === item.id) {
+          console.log("setting id to selected " + item.id);
+  
+          items.push(
+            <CollectionItem 
+              key={i} 
+              id={item.id.toString()} 
+              onClick={this.handleItemClicked} 
+              className='active'>
+                {item.name}
+            </CollectionItem>
+          );
+    
+        } else {
+          items.push(
+            <CollectionItem 
+              key={i} 
+              id={item.id.toString()} 
+              onClick={this.handleItemClicked}>
+                {item.name}
+            </CollectionItem>
+          );
+          }
+      }  
     }
 
-    return items;
+    return(
+    <Collection
+      id={"searchresults"}>
+        {items}
+    </Collection>);
   }
 
   render() {
+
+    // ok button disabled until we make a selection 
+    const disabled = this.state.search.selected ? false : true;
 
     return(
       <div className="col input-field s6">
@@ -207,7 +217,7 @@ class PlayerSearchModal extends Component {
         header='Search for Players'
         fixedFooter
         trigger={< Button >Search...</Button>}
-        actions={< div > <Button modal="close" waves="light" onClick={this.handleModalClosed}>OK</Button> < Button modal = "close" waves = "light"  onClick={this.handleModalReset} className = "red darken-2" > Cancel </Button> </div >}>
+        actions={< div > <Button modal="close" disabled={disabled} waves="light" onClick={this.handleModalClosed}>OK</Button> < Button modal = "close" waves = "light"  onClick={this.handleModalReset} className = "red darken-2" > Cancel </Button> </div >}>
         <p>Type the name of the member to search for:</p>
   
         <TextInput
@@ -218,10 +228,8 @@ class PlayerSearchModal extends Component {
           onChange={this.handleModalInputChanged}>
         </TextInput>
   
-        <Collection
-          id={"searchresults"}>
           {this.createSearchResults()}
-        </Collection>
+
       </Modal>
     </div>
     );

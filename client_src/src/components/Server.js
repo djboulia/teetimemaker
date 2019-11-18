@@ -174,6 +174,31 @@ const Server = {
     return Session.getName();
   },
 
+  memberSearch(name) {
+    const self = this;
+
+    return new Promise((resolve, reject) => {
+      if (!self.isLoggedIn()) {
+        const str = "Not logged in, log in first";
+        console.log(str);
+        reject(str);
+        return;
+      }
+
+      axios.post(UrlHandler.getUrlWithToken(`Members/search`, Session.getToken()), {
+        lastname: name
+      }).then(res => {
+          console.log(res);
+          console.log(res.data);
+
+          resolve(res.data);
+        })
+        .catch((e) => {
+          reject(e);
+        })
+    })
+  },
+
   schedulerList() {
     const self = this;
 

@@ -54,13 +54,12 @@ class Player extends Component {
 
   
   render() {
-    console.log("Player: render defaultValue " + JSON.stringify(this.props.defaultValue));
-    console.log("choices " + JSON.stringify(this.props.choices));
 
     let input = null;
-    let defaultValue = (this.props.defaultValue) ? this.props.defaultValue.id : '';
+    let defaultId = (this.props.defaultValue) ? this.props.defaultValue.id : '';
 
     if (this.props.self) {
+      console.log("Player: self defaultValue: " + this.props.name)
       input = (
         <div>
           <TextInput s={6} id={this.props.id} type="text" defaultValue={this.props.name} disabled/>
@@ -68,14 +67,16 @@ class Player extends Component {
       )
 
     } else {
-
+      console.log("Player: render defaultValue " + JSON.stringify(this.props.defaultValue));
+      console.log("choices " + JSON.stringify(this.props.choices));
+  
       // editable input field has select-able options and a search button
       input = (
         <div>
           <Select
             s={6}
             id={this.props.id}
-            value={defaultValue}
+            value={defaultId}
             onChange={this.handleSelectionChanged}>
             {this.createSelectItems()}
           </Select>

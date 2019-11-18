@@ -54,11 +54,15 @@ class AddReservation extends Component {
     const courses = this.state.courses;
     const golfers = this.state.golfers;
 
-    // Server   .schedulerAdd(time, courses, golfers)   .then(response => {     this
-    //       .props       .history       .push('/');   })   .catch(err =>
-    // console.log(err));
+    Server.schedulerAdd(teetime, courses, golfers)   
+      .then(response => {     
+        this.props.history.push('/reservations');   
+      })   
+      .catch(err =>
+          console.log(err)
+      );
 
-    console.log("would call addReservation: " + teetime + ", courses: " + JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
+    // console.log("would call addReservation: " + teetime + ", courses: " + JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
 
     e.preventDefault();
   }
