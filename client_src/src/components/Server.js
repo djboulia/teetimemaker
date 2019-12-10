@@ -28,12 +28,14 @@ const Session = {
    * set up a new session
    * 
    * @param {String} name human readable name for this user
+   * @param {Number} id golfer id for this user on the PWCC site
    * @param {String} token session token
    * @param {Integer} ttl time to live in millisecs
    */
-  set(name, token, ttl) {
+  set(name, id, token, ttl) {
     const data = {
       name: name,
+      id: id,
       token: token,
       expires: new Date().getTime() + ttl,
       ttl: ttl
@@ -85,16 +87,17 @@ const Session = {
     return token;
   },
 
-  getName() {
-    let name = undefined;
+  getUser() {
+    let user = {name: undefined, id: undefined};
     const data = this.getSessionData();
 
     if (data) {
-      name = data.name;
+      user.name = data.name;
+      user.id = data.id;
     }
 
-    console.log("returning name " + name);
-    return name;
+    console.log("returning user " + JSON.stringify(user));
+    return user;
   }
 };
 
@@ -123,8 +126,10 @@ const Server = {
 
         const userData = res.data.user;
         const name = (userData && userData.data) ? userData.data.name : undefined;
+        const id = (userData && userData.data) ? userData.data.id : undefined;
+        const token = res.data.id;
 
-        Session.set(name, res.data.id, res.data.ttl);
+        Session.set(name, id, token, res.data.ttl);
 
         result.status = true;
         result.msg = "Successfully Logged in";
@@ -170,8 +175,8 @@ const Server = {
     })
   },
 
-  getName() {
-    return Session.getName();
+  getUser() {
+    return Session.getUser();
   },
 
   memberSearch(name) {

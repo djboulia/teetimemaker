@@ -45,6 +45,8 @@ class ReservationDetails extends Component {
 
   render() {
 
+    const owner = Server.getUser().name;
+
     if (!this.state.details) {
       return <div>Loading...</div>
     }
@@ -54,13 +56,13 @@ class ReservationDetails extends Component {
     const teeTime = Formatter.teeTime(this.state.details.teetime);
     const reserveTime = Formatter.teeTime(this.state.details.scheduled);
     const courses = Formatter.courses(this.state.details.courses);
-    const golfers = Formatter.golfers(Server.getName(), this.state.details.golfers);
+    const golfers = Formatter.golfers(owner, this.state.details.golfers);
 
     return (
       <div>
         <br/>
         <Link className="btn" to="/">Back</Link>
-        <h1>Scheduled Reservation for {Server.getName()}</h1>
+        <h1>Scheduled Reservation for {owner}</h1>
         <ul className="collection">
           <li className="collection-item avatar">
             <i className="material-icons circle green">event</i>

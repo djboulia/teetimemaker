@@ -3,8 +3,16 @@ import {Table} from 'react-materialize';
 import '../App.css';
 import Player from './Player';
 
+let isSameId = function( id1, id2) {
+  return (id1.toString() === id2.toString());
+}
+
+let isSamePlayer = function( player1, player2) {
+  return (isSameId(player1.id, player2.id));
+}
+
 let validBuddy = function (buddy, player, foursome) {
-  if (buddy.id.toString() === player.id.toString()) {
+  if (isSamePlayer(buddy, player)) {
     // always include the active player in the list
     return true;
   }
@@ -15,7 +23,7 @@ let validBuddy = function (buddy, player, foursome) {
   for (let i = 0; i < foursome.length; i++) {
     const currentPlayer = foursome[i];
 
-    if (buddy.id.toString() === currentPlayer.id.toString()) {
+    if (isSamePlayer(buddy, currentPlayer)) {
       return false;
     }
 
@@ -24,14 +32,21 @@ let validBuddy = function (buddy, player, foursome) {
   return true;
 }
 
-// return true if the buddy exists in our list, false otherwise
-let isBuddy = function (player, buddies) {
+/**
+ * return true if the buddy exists in our list. check the owner id as well
+ */
+let isBuddy = function (player, owner, buddies) {
+  // count the tee time owner as a buddy
+  if (isSamePlayer(player, owner)) {
+    return true;
+  }
+
   let found = false;
 
   for (let i = 0; i < buddies.length; i++) {
     const buddy = buddies[i];
 
-    if (buddy.id.toString() === player.id.toString()) {
+    if (isSamePlayer(buddy, player)) {
       found = true;
       break;
     }
@@ -40,16 +55,21 @@ let isBuddy = function (player, buddies) {
   return found;
 }
 
-let isInFoursome = function (player, foursome) {
+let isInFoursome = function (player, owner, foursome) {
+  // count the tee tiee owner as part of the foursome
+  if (isSamePlayer(player, owner)) {
+    return true;
+  }
+
   let found = false;
 
   for (let i = 0; i < foursome.length; i++) {
     const golfer = foursome[i];
 
-    if (golfer.id.toString() === player.id.toString()) {
+    if (isSamePlayer(golfer, player)) {
       found = true;
       break;
-    }
+    } 
   }
 
   return found;
@@ -59,6 +79,12 @@ let available = {
   name: "Available",
   id: "0000"
 };
+
+/**
+ * TODO:
+ * - save buddies in local storage
+ * - set initial date to sometime in the future
+ */
 
 class PlayerPicker extends Component {
 
@@ -79,8 +105,12 @@ class PlayerPicker extends Component {
       .handleSelectionChanged
       .bind(this);
 
-    this.handleSearchChanged = this
+      this.handleSearchChanged = this
       .handleSearchChanged
+      .bind(this);
+
+      this.handleSearchFilter = this
+      .handleSearchFilter
       .bind(this);
 
   }
@@ -91,7 +121,7 @@ class PlayerPicker extends Component {
     for (let i = 0; i < this.state.buddies.length; i++) {
       const buddy = this.state.buddies[i];
 
-      if (buddy.id.toString() === id.toString()) {
+      if (isSameId(buddy.id, id)) {
         return buddy;
       }
     }
@@ -113,33 +143,14 @@ class PlayerPicker extends Component {
     });
   }
 
-  handleSearchChanged(result) {
-    console.log("handleSearchChanged : " + JSON.stringify(result));
-
-    let buddies = this.state.buddies;
-    let players = this.state.players;
-
-    // search result could mean that a totally new player is added to the list look
-    // for that here, add it to our "buddies" list if so
-    if (!isBuddy(result, buddies)) {
-      buddies.push(result);
-    }
-
-    // if the searched for player isn't in the foursome, add them
-    //
-    if (!isInFoursome(result, players)) {
-      players.push(result);
-    }
-
-    this.stateChange({buddies: buddies, players: players});
-
-  }
-
   handleSelectionChanged(e) {
-    console.log("event : " + JSON.stringify(e.target.id));
+    console.log("handleSelectionChanged event : " + JSON.stringify(e.target.id));
     console.log("changed! " + e.target.value);
 
     const prefix = "Player_";
+
+    const owner = this.state.owner;
+    console.log("self:" +JSON.stringify(owner));
 
     if (e.target.id.startsWith(prefix)) {
       let id = e
@@ -157,11 +168,11 @@ class PlayerPicker extends Component {
         let players = this.state.players;
         if (id >= players.length) {
           // add it to the end
-          if (player.name !== "Available") {
+          if (player.name !== "Available" && !isSamePlayer(player, owner)) {
             players.push(player);
           }
         } else {
-          if (player.name === "Available") {
+          if (player.name === "Available" || isSamePlayer(player, owner)) {
             // remove the entry
             players.splice(id, 1);
           } else {
@@ -175,6 +186,56 @@ class PlayerPicker extends Component {
         this.stateChange({players: players});
       }
     }
+  }
+
+  handleSearchChanged(result) {
+    console.log("handleSearchChanged : " + JSON.stringify(result));
+
+    const buddies = this.state.buddies;
+    const players = this.state.players;
+    const owner = this.state.owner;
+
+    // search result could mean that a totally new player is added to the list look
+    // for that here, add it to our "buddies" list if so
+    if (!isBuddy(result, owner, buddies)) {
+      buddies.push(result);
+    }
+
+    // if the searched for player isn't in the foursome, add them
+    //
+    if (!isInFoursome(result, owner, players)) {
+      players.push(result);
+    }
+
+    this.stateChange({buddies: buddies, players: players});
+
+  }
+
+  /**
+   * this hook gives us a chance to modify the results of the search.  we use this opportunity
+   * to take out invalid choices, e.g. people already in our foursome.
+   * 
+   * @param {Array} results list of players resulting from the search
+   */
+  handleSearchFilter(results) {
+    const players = this.state.players;
+    const owner = this.state.owner;
+
+    const filteredResults = [];
+
+    //results should be an array of current search results.
+    for (let i=0; i<results.length; i++) {
+      const player = results[i];
+
+      if (!isInFoursome(player, owner, players)) {
+        filteredResults.push(player);
+      } else {
+        console.log("Player " + player.name + " is already in foursome...removing from search list.");
+      }
+    }
+
+    console.log("handleSearchFilter returning: " + JSON.stringify(filteredResults));
+    return filteredResults;
   }
 
   getChoices(player, players, buddies) {
@@ -203,6 +264,7 @@ class PlayerPicker extends Component {
     const getChoices = this.getChoices;
     const handleSelectionChanged = this.handleSelectionChanged;
     const handleSearchChanged = this.handleSearchChanged;
+    const handleSearchFilter = this.handleSearchFilter;
 
     let foursome = [];
 
@@ -236,7 +298,7 @@ class PlayerPicker extends Component {
             <tr>
               <td>1</td>
               <td>
-                <Player name={this.state.owner} self="true"></Player>
+                <Player value={this.state.owner} self="true"></Player>
               </td>
             </tr>
 
@@ -252,10 +314,12 @@ class PlayerPicker extends Component {
                   }}>
                     <Player
                       id={"Player_" + index}
-                      defaultValue={player}
+                      value={player}
                       choices={getChoices(player, players, buddies)}
                       onChange={handleSelectionChanged}
-                      onChangeSearch={handleSearchChanged}></Player>
+                      onChangeSearch={handleSearchChanged}
+                      onFilterSearch={handleSearchFilter}>
+                      </Player>
                   </td>
                 </tr>
 

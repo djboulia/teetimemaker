@@ -35,3 +35,7 @@
 .display-none {
   display: none;
 }
+
+.spacer {
+  margin-right: 5px;
+}

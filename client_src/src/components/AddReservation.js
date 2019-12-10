@@ -54,6 +54,8 @@ class AddReservation extends Component {
     const courses = this.state.courses;
     const golfers = this.state.golfers;
 
+    console.log("schedulerAdd: " + teetime + ", courses: " + JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
+
     Server.schedulerAdd(teetime, courses, golfers)   
       .then(response => {     
         this.props.history.push('/reservations');   
@@ -61,8 +63,6 @@ class AddReservation extends Component {
       .catch(err =>
           console.log(err)
       );
-
-    // console.log("would call addReservation: " + teetime + ", courses: " + JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
 
     e.preventDefault();
   }
@@ -116,7 +116,7 @@ class AddReservation extends Component {
               <CoursePicker onChange={this.coursesChanged}></CoursePicker>
             </Row>
             <Row>
-              <PlayerPicker owner={Server.getName()} onChange={this.playersChanged}></PlayerPicker>
+              <PlayerPicker owner={Server.getUser()} onChange={this.playersChanged}></PlayerPicker>
             </Row>
           </div>
 

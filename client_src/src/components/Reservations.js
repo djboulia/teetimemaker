@@ -28,17 +28,18 @@ class Reservations extends Component {
   }
 
   render() {
+    const owner = Server.getUser().name;
 
     const teetimes = this
       .state
       .teetimes
       .map((teetime, i) => {
-        return (<ReservationItem key={teetime.id} owner={Server.getName()} item={teetime}/>)
+        return (<ReservationItem key={teetime.id} owner={owner} item={teetime}/>)
       })
 
     return (
       <div>
-        <h1>Upcoming Reservations for {Server.getName()}</h1>
+        <h1>Upcoming Reservations for {owner}</h1>
         <table>
           <thead>
             <tr>

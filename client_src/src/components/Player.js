@@ -3,29 +3,16 @@ import {TextInput, Select, Row} from 'react-materialize';
 import PlayerSearchModal from './PlayerSearchModal';
 import '../App.css';
 
+/**
+ * This component accepts the following optional properties:
+ *  id {String} id for this component
+ *  self {boolean} if provided, indicates this player is tee time owner and can't be modified
+ *  value {Object} the player for this component
+ *  onChange  {Function} fired when the dropdown selection changes
+ *  onFilterSearch {Function} to modify the search results before they are displayed
+ *  onChangeSearch {Function} fired when a search results in a change
+ */
 class Player extends Component {
-
-  constructor(props) {
-    super(props);
-
-    this.handleSelectionChanged = this
-      .handleSelectionChanged
-      .bind(this);
-
-    this.handleModalClosed = this
-      .handleModalClosed
-      .bind(this);
-  }
-
-  handleSelectionChanged(e) {
-    console.log("Player: selection changed");
-
-    if (this.props.onChange) {
-      this
-      .props
-      .onChange(e);
-    }
-  }
 
   createSelectItems() {
     let items = [];
@@ -35,7 +22,7 @@ class Player extends Component {
         var choice = this.props.choices[i];
 
         items.push(
-          <option key={i} value={choice.id}>{choice.name}</option>
+          <option key={i} value={choice.id.toString()}>{choice.name}</option>
         );
       }
     }
@@ -43,31 +30,22 @@ class Player extends Component {
     return items;
   }
 
-  /**
-   * we bubble up the modal result to the parent object
-   */
-  handleModalClosed(player) {
-    if (this.props.onChangeSearch) {
-      this.props.onChangeSearch(player);
-    }
-  }
-
-  
   render() {
 
     let input = null;
-    let defaultId = (this.props.defaultValue) ? this.props.defaultValue.id : '';
+    const player = (this.props.value) ? this.props.value : undefined;
+    const playerId = (player) ? player.id.toString() : '';
 
     if (this.props.self) {
-      console.log("Player: self defaultValue: " + this.props.name)
+      console.log("Player: self value: " + JSON.stringify(player))
       input = (
         <div>
-          <TextInput s={6} id={this.props.id} type="text" defaultValue={this.props.name} disabled/>
+          <TextInput s={6} id={this.props.id} type="text" defaultValue={player.name} disabled/>
         </div>
       )
 
     } else {
-      console.log("Player: render defaultValue " + JSON.stringify(this.props.defaultValue));
+      console.log("Player: render value " + JSON.stringify(player));
       console.log("choices " + JSON.stringify(this.props.choices));
   
       // editable input field has select-able options and a search button
@@ -76,13 +54,14 @@ class Player extends Component {
           <Select
             s={6}
             id={this.props.id}
-            value={defaultId}
-            onChange={this.handleSelectionChanged}>
+            value={playerId}
+            onChange={this.props.onChange}>
             {this.createSelectItems()}
           </Select>
 
           <PlayerSearchModal 
-            onClose={this.handleModalClosed}>
+            onClose={this.props.onChangeSearch}
+            onFilterSearch={this.props.onFilterSearch}>
           </PlayerSearchModal>
         </div>
       )
