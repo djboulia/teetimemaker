@@ -16,7 +16,10 @@ The basic idea is this:
 - when the tee sheet opens, fire an event to book it with the club
 - use the user's credentials to log in and make the reservation
 
-Right now there is no UI, just an API.  The API lets you:
+The UI is being built in React (see bbelow).  Still incomplete, so in the meantime, 
+use the API.
+
+The API lets you:
 
 - create/update a user's credentials (userid and password) for the booking site
   (this is what the app uses to log in and book the tee time when the sheet opens)
@@ -30,7 +33,7 @@ Behind the scenes, reservation data is stored in Cloudant.  This allows the app
 to recover pending reservations if/when it is restarted.
 
 The real heavy lifting for booking the tee time is done with a separate service
-named teetime-pwcc.  This is a Java Liberty REST service that interacts with
+named teetimepwccjs.  This is a Javascript  REST service that interacts with
 the PWCC site.
 
 # Full Stack React & LoopBack Application
