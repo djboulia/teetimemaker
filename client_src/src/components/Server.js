@@ -2,7 +2,9 @@ import axios from 'axios';
 
 const UrlHandler = {
   baseUrl() {
-    return "http://localhost:3001/api/";
+    console.log("baseUrl: " + process.env.REACT_APP_URL);
+    
+    return (process.env.REACT_APP_URL) ? process.env.REACT_APP_URL : "/api/";
   },
   getUrl(page) {
     return this.baseUrl() + page;

@@ -7,6 +7,9 @@ import CoursePicker from './CoursePicker';
 import PlayerPicker from './PlayerPicker';
 import Server from './Server';
 
+/**
+ * TODO: remember prior player searches in local storage
+ */
 class AddReservation extends Component {
   constructor(props) {
     super(props);

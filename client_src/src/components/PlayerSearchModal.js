@@ -38,6 +38,8 @@ let defaultSearchState = function() {
 /**
  * props:
  *  onClose - function - if provided, will be called with the result of the search
+ * 
+ * TODO: remember last search result to speed up modal dialog
  */
 class PlayerSearchModal extends Component {
 

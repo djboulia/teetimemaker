@@ -3,6 +3,9 @@ import ReservationItem from './ReservationItem';
 import Server from './Server';
 import { Link } from 'react-router-dom';
 
+/**
+ * TODO: sort list by date/time
+ */
 class Reservations extends Component {
   constructor() {
     super();

@@ -18,7 +18,7 @@
     "react-times": "^3.1.12"
   },
   "scripts": {
-    "start": "PORT=3002 react-scripts start",
+    "start": "PORT=3002 REACT_APP_URL=http://localhost:3001/api/ react-scripts start",
     "build": "react-scripts build && cp -r build/* ../client/",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
