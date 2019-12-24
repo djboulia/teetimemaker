@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {Table} from 'react-materialize';
 import '../App.css';
 import Player from './Player';
+import Buddies from '../utils/Buddies';
 
 let isSameId = function( id1, id2) {
   return (id1.toString() === id2.toString());
@@ -80,11 +81,6 @@ let available = {
   id: "0000"
 };
 
-/**
- * TODO:
- * - save buddies in local storage
- * - set initial date to sometime in the future
- */
 
 class PlayerPicker extends Component {
 
@@ -95,9 +91,6 @@ class PlayerPicker extends Component {
       owner: props.owner, // owner of this tee time is always the first player
 
       players: [
-      ],
-
-      buddies: [
       ]
     };
 
@@ -116,10 +109,12 @@ class PlayerPicker extends Component {
   }
 
   findPlayer(id) {
-    console.log("findPlayer: buddies " + JSON.stringify(this.state.buddies));
+    const buddies = Buddies.get();
 
-    for (let i = 0; i < this.state.buddies.length; i++) {
-      const buddy = this.state.buddies[i];
+    console.log("findPlayer: buddies " + JSON.stringify(buddies));
+
+    for (let i = 0; i < buddies.length; i++) {
+      const buddy = buddies[i];
 
       if (isSameId(buddy.id, id)) {
         return buddy;
@@ -133,7 +128,7 @@ class PlayerPicker extends Component {
    * funnel all state changes through this method so that 
    * we fire an appropriate onChange event when state changes
    * 
-   * @param {*} state new state to set
+   * @param {Object} state new state to set
    */
   stateChange(state) {
     this.setState(state, () => {
@@ -191,14 +186,14 @@ class PlayerPicker extends Component {
   handleSearchChanged(result) {
     console.log("handleSearchChanged : " + JSON.stringify(result));
 
-    const buddies = this.state.buddies;
+    const buddies = Buddies.get();
     const players = this.state.players;
     const owner = this.state.owner;
 
-    // search result could mean that a totally new player is added to the list look
-    // for that here, add it to our "buddies" list if so
+    // search result could mean that a totally new player is added to the list.
+    // look for that here, add it to our "buddies" list if so
     if (!isBuddy(result, owner, buddies)) {
-      buddies.push(result);
+      Buddies.add(result);
     }
 
     // if the searched for player isn't in the foursome, add them
@@ -207,8 +202,7 @@ class PlayerPicker extends Component {
       players.push(result);
     }
 
-    this.stateChange({buddies: buddies, players: players});
-
+    this.stateChange({players: players});
   }
 
   /**
@@ -260,7 +254,7 @@ class PlayerPicker extends Component {
     console.log("players: " + JSON.stringify(this.state.players));
 
     const players = this.state.players;
-    const buddies = this.state.buddies;
+    const buddies = Buddies.get();
     const getChoices = this.getChoices;
     const handleSelectionChanged = this.handleSelectionChanged;
     const handleSearchChanged = this.handleSearchChanged;

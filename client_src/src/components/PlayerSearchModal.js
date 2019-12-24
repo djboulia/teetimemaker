@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {Button, TextInput, Row, Modal, Collection, CollectionItem} from 'react-materialize';
-import Server from './Server';
+import Server from '../utils/Server';
 import '../App.css';
 
 class PlayerSearch {

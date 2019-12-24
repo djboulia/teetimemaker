@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {Icon, Navbar, NavItem, SideNav, SideNavItem} from 'react-materialize';
-import Server from './Server';
+import Server from '../utils/Server';
 
 class Nav extends Component {
   constructor(props) {

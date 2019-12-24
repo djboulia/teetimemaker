@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {Redirect} from 'react-router-dom'
-import Server from './Server';
+import Server from '../utils/Server';
 
 class Logout extends Component {
 

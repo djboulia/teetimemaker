@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {Link} from 'react-router-dom';
-import Server from './Server';
+import Server from '../utils/Server';
 import Formatter from '../utils/Formatter';
 
 class ReservationDetails extends Component {

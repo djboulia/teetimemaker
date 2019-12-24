@@ -5,18 +5,24 @@ import TeeTimePicker from './TeeTimePicker';
 import TeeDatePicker from './TeeDatePicker';
 import CoursePicker from './CoursePicker';
 import PlayerPicker from './PlayerPicker';
-import Server from './Server';
+import Server from '../utils/Server';
 
-/**
- * TODO: remember prior player searches in local storage
- */
+let tomorrow = function() {
+  const date = new Date()
+
+  // Add a day
+  date.setDate(date.getDate() + 1)  
+
+  return date;
+}
+
 class AddReservation extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
       time: "8:00 AM",
-      date: new Date(),
+      date: tomorrow(),
       courses: [],
       golfers: []
     }
@@ -116,10 +122,14 @@ class AddReservation extends Component {
 
             </Row>
             <Row>
+
               <CoursePicker onChange={this.coursesChanged}></CoursePicker>
+
             </Row>
             <Row>
+
               <PlayerPicker owner={Server.getUser()} onChange={this.playersChanged}></PlayerPicker>
+
             </Row>
           </div>
 

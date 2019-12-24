@@ -1,14 +1,22 @@
 import axios from 'axios';
 
 const UrlHandler = {
+
+  /**
+   * if REACT_APP_URL is set, we send back end requests to that, otherwise
+   * we default to the same host that served up the client
+   * useful for dev mode where the server might be hosted in a different url
+   */
   baseUrl() {
-    console.log("baseUrl: " + process.env.REACT_APP_URL);
-    
+    // console.log("baseUrl: " + process.env.REACT_APP_URL);
+
     return (process.env.REACT_APP_URL) ? process.env.REACT_APP_URL : "/api/";
   },
+
   getUrl(page) {
     return this.baseUrl() + page;
   },
+
   getUrlWithToken(page, token) {
     return this.baseUrl() + page + "?access_token=" + token;
   }
@@ -90,7 +98,10 @@ const Session = {
   },
 
   getUser() {
-    let user = {name: undefined, id: undefined};
+    let user = {
+      name: undefined,
+      id: undefined
+    };
     const data = this.getSessionData();
 
     if (data) {
@@ -193,8 +204,8 @@ const Server = {
       }
 
       axios.post(UrlHandler.getUrlWithToken(`Members/search`, Session.getToken()), {
-        lastname: name
-      }).then(res => {
+          lastname: name
+        }).then(res => {
           console.log(res);
           console.log(res.data);
 
@@ -270,10 +281,10 @@ const Server = {
       }
 
       axios.post(UrlHandler.getUrlWithToken(`Scheduler`, Session.getToken()), {
-        time: time,
-        courses: courses,
-        golfers: golfers
-      }).then(res => {
+          time: time,
+          courses: courses,
+          golfers: golfers
+        }).then(res => {
           console.log(res);
           console.log(res.data);
 

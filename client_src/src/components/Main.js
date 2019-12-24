@@ -7,7 +7,7 @@ import Logout from './Logout';
 import Reservations from './Reservations';
 import ReservationDetails from './ReservationDetails';
 import AddReservation from './AddReservation';
-import Server from './Server';
+import Server from '../utils/Server';
 
 const PrivateRoute = ({
   component: Component,

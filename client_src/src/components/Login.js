@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {Row, Button, TextInput} from 'react-materialize';
 import {Redirect} from 'react-router-dom'
-import Server from './Server';
+import Server from '../utils/Server';
 import '../App.css';
 
 let statusMsg = (msg) => {
