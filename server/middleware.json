@@ -20,7 +20,7 @@
     "helmet#hsts": {
       "params": {
         "maxAge": 0,
-        "includeSubdomains": true
+        "includeSubDomains": true
       }
     },
     "helmet#hidePoweredBy": {},
@@ -43,6 +43,16 @@
   "files": {
     "loopback#static": {
       "params": "$!../client"
+    }
+  },
+  "final": {
+    "express-history-api-fallback": {
+      "params": [
+        "index.html",
+        {
+          "root": "$!../client/dist"
+        }
+      ]
     }
   },
   "final:after": {
