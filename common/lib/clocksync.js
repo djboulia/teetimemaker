@@ -1,7 +1,9 @@
-// the server this code deploys on could have a pretty lousy clock, 
-// and we need events to fire near the time of the tee sheet opening in order
-// to get the best time we use NTP to calculate server drift and return 
-// the delta
+/**
+ * the server this code deploys on could have a pretty lousy clock, 
+ * and we need events to fire near the time of the tee sheet opening. in order
+ * to get the best time we use NTP to calculate server drift and return 
+ * the delta
+ */
 
 var ntpsync = require('ntpsync');
 
@@ -10,9 +12,9 @@ var ntpInProgress = false;
 var ntpPromise = null;
 var delta = 0;
 
-//
-// return the difference (in ms) between this clock and the time servers
-//
+/**
+ * return the difference (in ms) between this clock and the time servers
+ */
 exports.delta = function() {
   if (!initialized) {
     console.log("call init() first to establish delta!");
@@ -21,9 +23,9 @@ exports.delta = function() {
   return delta;
 }
 
-//
-// call this function when the server starts up to establish the delta offset
-//
+/**
+ * call this function when the server starts up to establish the delta offset
+ */
 exports.init = function () {
 
   if (!ntpInProgress) {

@@ -1,8 +1,8 @@
-//
-// this represents the specifics of a tee time, converting it 
-// to the correct time zone and determining when
-// a given tee time can be booked with the country club site
-// 
+/**
+ * this represents the specifics of a tee time, converting it 
+ * to the correct time zone and determining when
+ * a given tee time can be booked with the country club site
+ */
 var moment = require('moment-timezone');
 var ClockSync = require('../lib/clocksync');
 
@@ -29,18 +29,17 @@ var TeeTime = function (reservation) {
     return theTime;
   };
 
-  //
-  // calculate the first time we can actually book this tee
-  // time.  the tee sheet opens at 7am three days before for Sat/Sun,
-  // 14 days before for Tues-Thu
-  // 
+  /**
+   * calculate the first time we can actually book this tee
+   * time.  the tee sheet opens at 7am three days before for Sat/Sun,
+   * 14 days before for Tues-Thu
+   * Monday the course is normally closed, except for key
+   * holidays where it's treated like a weekend.
+   */
   this.getTeeSheetOpenDate = function () {
     // console.log("etzMoment: " + etzMoment.format());
 
     // move to the beginning of the day of the reservation
-    var msInADay = 24 * 60 * 60 * 1000;
-    var daysTillOpen = 0;
-
     var m = etzMoment.clone().startOf("day");
     var dayOfWeek = m.day();
 
@@ -53,7 +52,7 @@ var TeeTime = function (reservation) {
       // tee sheet opens at 7:30am on weekdays with new tee sheet rules
       m.hours(7).minutes(30);
     } else {
-      // Sat/Sun are a 3 day window, back up appropriately
+      // Sat/Sun/Mon are a 3 day window, back up appropriately
       m.subtract(3, 'days');
 
       // [11/07/2018] changed this back to exactly 7am with the new
@@ -74,9 +73,9 @@ var TeeTime = function (reservation) {
     return new Date(date.getTime() + delta);
   };
 
-  //
-  // return true if the tee time is in the future, false otherwise
-  //
+  /**
+   * return true if the tee time is in the future, false otherwise
+   */
   this.inTheFuture = function () {
     var now = nowMilliseconds();
     var reservedTime = this.getDate().getTime();
@@ -88,9 +87,9 @@ var TeeTime = function (reservation) {
     return false;
   }
 
-  //
-  // return true if the tee sheet is open for this
-  //
+  /**
+   * return true if the tee sheet is already open for this tee time
+   */
   this.isTeeSheetOpen = function () {
 
     if (this.inTheFuture()) {
