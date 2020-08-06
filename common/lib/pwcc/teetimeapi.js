@@ -88,6 +88,7 @@ var TeeTimeAPI = function () {
 
   const TEETIME_SEARCH_URL = TEETIME_BASE_URL + "search";
   const TEETIME_RESERVE_URL = TEETIME_BASE_URL + "reserve";
+  const TEETIME_RESERVEBYTIMESLOT_URL = TEETIME_BASE_URL + "reserveByTimeSlot";
 
   this.buildTokenizedUrl = function(url) {
     const tokenUrl = url + "?access_token=" + tokenId;
@@ -317,6 +318,57 @@ var TeeTimeAPI = function () {
       }
 
       var url = self.buildTokenizedUrl(TEETIME_RESERVE_URL)
+      var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
+
+      request.post(teetimedata, function (json) {
+        if (json) {
+          if (json.time) {
+            console.log(JSON.stringify(json));
+            resolve(json);
+          } else {
+            // didn't return a tee time, some error occurred
+            console.log("Error: " + JSON.stringify(json));
+            reject(json);
+          }
+        } else {
+          var str = "Error reserving tee time!";
+          console.log(str);
+          reject(str);
+        }
+      });
+    });
+
+  };
+
+  /**
+   * book at tee time with the backend reservation system
+   * takes a series of time slots to try to reserve
+   */
+  this.reserveByTimeSlot = function (timeslots, players) {
+    const self = this;
+
+    console.log("reserveByTimeSlot fired at " + new Date().toString());
+
+    const teetimedata = {
+      timeslots : timeslots,
+      players : players
+    };
+
+    console.log("teetimedata " + JSON.stringify(teetimedata));
+
+    return new Promise(function (resolve, reject) {
+
+      if (!loggedIn) {
+        reject("Not logged in!");
+        return;
+      }
+
+      if (!self.validGolfers(teetimedata.players)) {
+        reject("invalid golfers array in input : " + JSON.stringify(teetimedata));
+        return;
+      }
+
+      var url = self.buildTokenizedUrl(TEETIME_RESERVEBYTIMESLOT_URL)
       var request = testMode ? new MockJsonRequest(url) : new JsonRequest(url);
 
       request.post(teetimedata, function (json) {

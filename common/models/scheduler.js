@@ -41,13 +41,13 @@ module.exports = function (Scheduler) {
    * @param {String} id model id for this reservation
    * @param {Object} session holds a logged in session to use for reservation
    */
-  var doReservation = function (time, id, session) {
+  var doReservation = function (time, id, timeslots, session) {
     var job = new CronJob(time, function () {
         console.log("doReservation cron job running");
 
         var Reservation = app.models.Reservation.Promise;
 
-        Reservation.reserve(id, session)
+        Reservation.reserveByTimeSlot(id, timeslots, session)
           .then(function (result) {
               console.log(result);
             },
@@ -65,6 +65,43 @@ module.exports = function (Scheduler) {
     job.start();
   };
 
+  var isTimeSlotAvailable = function (slot) {
+    if (!slot || !slot.players) {
+      return false;
+    }
+
+    const players = slot.players;
+
+    // check to make sure the tee time is available
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+
+      if (player.toLowerCase() != 'available' && player.toLowerCase() != "call to inquire") {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  var getAvailableTimeSlots = function (timeslots) {
+    const validTimeSlots = [];
+
+    for (let i = 0; i < timeslots.length; i++) {
+      const timeslot = timeslots[i];
+
+      if (isTimeSlotAvailable(timeslot)) {
+        validTimeSlots.push({
+          date: timeslot.date,
+          id: timeslot.id,
+          course: timeslot.course
+        });
+      }
+    }
+
+    return validTimeSlots;
+  }
+
   /**
    * make the reservation at the specified date
    * we do this in two steps: 
@@ -77,44 +114,73 @@ module.exports = function (Scheduler) {
   var addJob = function (time, id) {
     const ONE_SECOND = 1000;
     const ONE_MINUTE = 60 * ONE_SECOND;
+    const INTERVAL = ONE_MINUTE;
 
     let timeToLogin = time.getTime();
-    timeToLogin -= ONE_MINUTE; // log in a minute early
+    timeToLogin -= INTERVAL; // log in a minute early
 
     const now = Date.now();
     if (timeToLogin <= now) {
       // don't set a cron job in the past, just make it a second in the future
       console.log("login cron job would be in the past, adjusting to run immediately.");
       timeToLogin = now + ONE_SECOND;
-      time = new Date(now + ONE_MINUTE);
+      time = new Date(now + INTERVAL);
     }
 
     var job = new CronJob(new Date(timeToLogin), function () {
         const startTime = Date.now();
-        var Reservation = app.models.Reservation.Promise;
+        const Reservation = app.models.Reservation.Promise;
 
-        Reservation.login(id)
-          .then(function (session) {
+        Reservation.findById(id)
+          .then(function (record) {
+            const result = record.data.result;
 
-            const now = Date.now();
-            const elapsed = now - startTime;
-
-            if (elapsed >= ONE_MINUTE) {
-              // took us more than a minute to login, just trigger the reservation now
-              time = new Date(now + ONE_SECOND); // run one second from now
-              console.log("logged in, making reservation in 1 second.");
+            // [djb 7/1/2020] now that we potentially have to book tee 
+            // times across three separate intervals, we first check 
+            // the record to see if a prior job has already acquired
+            // the tee time.  If a prior request was successful, we 
+            // don't run the cron job
+            if (result && result.status && result.status === "success") {
+              console.log("Skipping cron job at " + startTime);
+              console.log("Tee time already acquired previously: " + JSON.stringify(result));
             } else {
-              const secsLeft = (ONE_MINUTE - elapsed) / 1000;
-              console.log("logged in, making reservation in " + secsLeft + " seconds.");
+              Reservation.login(id)
+                .then(function (session) {
+
+                  // [djb 8/4/2020] do the search in advance of the actual tee sheet
+                  // opening up in an effort to beat everyone else to the tee times
+                  Reservation.search(id, session)
+                    .then(function (timeslots) {
+
+                        const now = Date.now();
+                        const elapsed = now - startTime;
+
+                        if (elapsed >= INTERVAL) {
+                          // took us more than a minute to login, just trigger the reservation now
+                          time = new Date(now + ONE_SECOND); // run one second from now
+                          console.log("logged in, making reservation in 1 second.");
+                        } else {
+                          const secsLeft = (INTERVAL - elapsed) / 1000;
+                          console.log("logged in, making reservation in " + secsLeft + " seconds.");
+                        }
+
+                        const validTimeSlots = getAvailableTimeSlots(timeslots);
+
+                        doReservation(time, id, validTimeSlots, session);
+
+                        jobs[id] = undefined; // remove this job from our list of active jobs
+
+                      },
+                      function (err) {
+                        console.log(err);
+                      });
+
+
+                }, function (err) {
+                  console.log(err);
+                });
             }
-
-            doReservation(time, id, session);
-
-            jobs[id] = undefined; // remove this job from our list of active jobs
-          }, function (err) {
-            console.log(err);
           });
-
       },
       function () {
         // This function is executed when the job stops
@@ -147,7 +213,6 @@ module.exports = function (Scheduler) {
 
       var id = record.id;
       var teetime = new TeeTime(record);
-      var openTime = teetime.getTeeSheetOpenDate();
 
       console.log("tee time reservation: " + teetime.getDate().toString());
 
@@ -170,12 +235,18 @@ module.exports = function (Scheduler) {
 
         resolve(str);
       } else {
-        console.log("setting job for: " + openTime.toString());
+        var openTimes = teetime.getTeeSheetOpenDates();
+        var str = "Scheduling reservations on " + JSON.stringify(openTimes);
 
-        var str = "Scheduling reservation on " + openTime.toString();
-        console.log(str);
+        for (let i = 0; i < openTimes.length; i++) {
+          const openTime = openTimes[i];
 
-        addJob(openTime, id);
+          console.log("setting job for: " + openTime.toString());
+
+          console.log(str);
+
+          addJob(openTime, id);
+        }
 
         resolve(str);
       }

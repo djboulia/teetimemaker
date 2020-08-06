@@ -30,18 +30,19 @@ var TeeTime = function (reservation) {
   };
 
   /**
-   * calculate the first time we can actually book this tee
-   * time.  the tee sheet opens at 7am three days before for Sat/Sun,
-   * 14 days before for Tues-Thu
+   * calculate the times we can actually book this tee
+   * time.  the tee sheet opens at 6:40, 6:40 and 7am three 
+   * days before for Sat/Sun, and 7:30am 14 days before for Tues-Thu
    * Monday the course is normally closed, except for key
    * holidays where it's treated like a weekend.
    */
-  this.getTeeSheetOpenDate = function () {
+  this.getTeeSheetOpenDates = function () {
     // console.log("etzMoment: " + etzMoment.format());
 
     // move to the beginning of the day of the reservation
     var m = etzMoment.clone().startOf("day");
     var dayOfWeek = m.day();
+    const dates = [];
 
     console.log("dayOfWeek " + dayOfWeek);
 
@@ -51,10 +52,16 @@ var TeeTime = function (reservation) {
 
       // tee sheet opens at 7:30am on weekdays with new tee sheet rules
       m.hours(7).minutes(30);
+
+      var date = new Date(m.utc().format());
+      dates.push(new Date(date.getTime() + delta));
     } else {
       // Sat/Sun/Mon are a 3 day window, back up appropriately
       m.subtract(3, 'days');
 
+      // [6/30/2020] changed this to deal with tee sheet opening at 
+      //             6:40, 6:50 and 7:00am due to COVID tee sheet changes
+      //
       // [11/07/2018] changed this back to exactly 7am with the new
       // tee sheet software; prior software allowed us to cheat
       //
@@ -62,15 +69,40 @@ var TeeTime = function (reservation) {
       // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
       // m.hours(6).minutes(58);
 
-      // start right at 7am with new tee sheet rules
+      // add 6:40, 6:50 and then 7am with new tee sheet rules
+      m.hours(6).minutes(40);
+
+      var date = new Date(m.utc().format());      
+      dates.push(new Date(date.getTime() + delta));
+
+      m = etzMoment.clone().startOf("day");
+      m.subtract(3, 'days');
+      m.hours(6).minutes(50);
+
+      date = new Date(m.utc().format());      
+      dates.push(new Date(date.getTime() + delta));
+
+      m = etzMoment.clone().startOf("day");
+      m.subtract(3, 'days');
       m.hours(7).minutes(0);
+
+      date = new Date(m.utc().format());      
+      dates.push(new Date(date.getTime() + delta));
     }
 
-    var date = new Date(m.utc().format());
 
-    console.log("Tee sheet opens at : " + date.toString());
+    console.log("Tee sheet opens at : " + JSON.stringify(dates));
 
-    return new Date(date.getTime() + delta);
+    return dates;
+  };
+
+  /**
+   * calculate the first time we can actually book this tee
+   * time.  
+   */
+  this.getTeeSheetOpenDate = function () {
+    const dates = this.getTeeSheetOpenDates();
+    return dates[0];
   };
 
   /**

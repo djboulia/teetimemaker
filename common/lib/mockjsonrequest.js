@@ -27,6 +27,13 @@ var mockRequest = function (url, data, cb) {
       json.time = data ? data.time : "";
       json.date = data ? data.date : "";
       json.course = data.courses ? data.courses[0] : "";
+    } else if (url.includes('/reserveByTimeSlot?access_token')) {
+      // fake up a reserve result
+      console.log("MOCK RESERVE call to " + url);
+
+      json.time = data ? data.time : "";
+      json.date = data ? data.date : "";
+      json.course = data.courses ? data.courses[0] : "";
     } else {
       console.log("MOCK UNKNOWN call to " + url);
     }
