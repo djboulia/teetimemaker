@@ -6,6 +6,9 @@
 var moment = require('moment-timezone');
 var ClockSync = require('../lib/clocksync');
 
+const TUESDAY = 2;
+const FRIDAY = 5;
+
 var TeeTime = function (reservation) {
 
   var time = reservation.data.time;
@@ -30,11 +33,20 @@ var TeeTime = function (reservation) {
   };
 
   /**
+   * [djb 08/18/2020] The *$^!%% tee sheet system decided to move
+   * back to just a single time which opens at 6:45AM vs. opening
+   * at three different times.
+   * 
    * calculate the times we can actually book this tee
-   * time.  the tee sheet opens at 6:40, 6:40 and 7am three 
-   * days before for Sat/Sun, and 7:30am 14 days before for Tues-Thu
+   * time.  the tee sheet opens at 6:45 three days before for 
+   * Sat/Sun, and 7:30am 14 days before for Tues-Thu
    * Monday the course is normally closed, except for key
    * holidays where it's treated like a weekend.
+   * 
+   * Note that this function returns an array of open dates because
+   * the tee time system at one time had a policy of opening
+   * each course at a different time to reduce demand on the
+   * tee time system.
    */
   this.getTeeSheetOpenDates = function () {
     // console.log("etzMoment: " + etzMoment.format());
@@ -46,7 +58,7 @@ var TeeTime = function (reservation) {
 
     console.log("dayOfWeek " + dayOfWeek);
 
-    if (dayOfWeek > 1 && dayOfWeek < 6) {
+    if (dayOfWeek >= TUESDAY && dayOfWeek <= FRIDAY) {
       // Tues-Fri is a 14 day window, back up appropriately
       m.subtract(14, 'days');
 
@@ -59,6 +71,9 @@ var TeeTime = function (reservation) {
       // Sat/Sun/Mon are a 3 day window, back up appropriately
       m.subtract(3, 'days');
 
+      // [8/18/2020] changed this BACK to a single time for weekends
+      //             ith tee sheet opening at 6:45AM for all courses
+      //
       // [6/30/2020] changed this to deal with tee sheet opening at 
       //             6:40, 6:50 and 7:00am due to COVID tee sheet changes
       //
@@ -69,24 +84,9 @@ var TeeTime = function (reservation) {
       // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
       // m.hours(6).minutes(58);
 
-      // add 6:40, 6:50 and then 7am with new tee sheet rules
-      m.hours(6).minutes(40);
+      m.hours(6).minutes(45);
 
       var date = new Date(m.utc().format());      
-      dates.push(new Date(date.getTime() + delta));
-
-      m = etzMoment.clone().startOf("day");
-      m.subtract(3, 'days');
-      m.hours(6).minutes(50);
-
-      date = new Date(m.utc().format());      
-      dates.push(new Date(date.getTime() + delta));
-
-      m = etzMoment.clone().startOf("day");
-      m.subtract(3, 'days');
-      m.hours(7).minutes(0);
-
-      date = new Date(m.utc().format());      
       dates.push(new Date(date.getTime() + delta));
     }
 
