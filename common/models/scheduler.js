@@ -41,15 +41,15 @@ module.exports = function (Scheduler) {
    * @param {String} id model id for this reservation
    * @param {Object} session holds a logged in session to use for reservation
    */
-  var doReservation = function (time, id, timeslots, session) {
+  var doReservation = function (time, id, session) {
     var job = new CronJob(time, function () {
         console.log("doReservation cron job running");
 
         var Reservation = app.models.Reservation.Promise;
 
-        Reservation.reserveByTimeSlot(id, timeslots, session)
+        Reservation.reserve(id, session)
           .then(function (result) {
-              console.log(result);
+              console.log(JSON.stringify(result));
             },
             function (err) {
               console.log(err);
@@ -64,43 +64,6 @@ module.exports = function (Scheduler) {
 
     job.start();
   };
-
-  var isTimeSlotAvailable = function (slot) {
-    if (!slot || !slot.players) {
-      return false;
-    }
-
-    const players = slot.players;
-
-    // check to make sure the tee time is available
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-
-      if (player.toLowerCase() != 'available' && player.toLowerCase() != "call to inquire") {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  var getAvailableTimeSlots = function (timeslots) {
-    const validTimeSlots = [];
-
-    for (let i = 0; i < timeslots.length; i++) {
-      const timeslot = timeslots[i];
-
-      if (isTimeSlotAvailable(timeslot)) {
-        validTimeSlots.push({
-          date: timeslot.date,
-          id: timeslot.id,
-          course: timeslot.course
-        });
-      }
-    }
-
-    return validTimeSlots;
-  }
 
   /**
    * make the reservation at the specified date
@@ -135,51 +98,29 @@ module.exports = function (Scheduler) {
           .then(function (record) {
             const result = record.data.result;
 
-            // [djb 7/1/2020] now that we potentially have to book tee 
-            // times across three separate intervals, we first check 
-            // the record to see if a prior job has already acquired
-            // the tee time.  If a prior request was successful, we 
-            // don't run the cron job
-            if (result && result.status && result.status === "success") {
-              console.log("Skipping cron job at " + startTime);
-              console.log("Tee time already acquired previously: " + JSON.stringify(result));
-            } else {
-              Reservation.login(id)
-                .then(function (session) {
+            Reservation.login(id)
+              .then(function (session) {
 
-                  // [djb 8/4/2020] do the search in advance of the actual tee sheet
-                  // opening up in an effort to beat everyone else to the tee times
-                  Reservation.search(id, session)
-                    .then(function (timeslots) {
+                const now = Date.now();
+                const elapsed = now - startTime;
 
-                        const now = Date.now();
-                        const elapsed = now - startTime;
+                if (elapsed >= INTERVAL) {
+                  // took us more than a minute to login, just trigger the reservation now
+                  time = new Date(now + ONE_SECOND); // run one second from now
+                  console.log("logged in, making reservation in 1 second.");
+                } else {
+                  const secsLeft = (INTERVAL - elapsed) / 1000;
+                  console.log("logged in, making reservation in " + secsLeft + " seconds.");
+                }
 
-                        if (elapsed >= INTERVAL) {
-                          // took us more than a minute to login, just trigger the reservation now
-                          time = new Date(now + ONE_SECOND); // run one second from now
-                          console.log("logged in, making reservation in 1 second.");
-                        } else {
-                          const secsLeft = (INTERVAL - elapsed) / 1000;
-                          console.log("logged in, making reservation in " + secsLeft + " seconds.");
-                        }
+                doReservation(time, id, session);
 
-                        const validTimeSlots = getAvailableTimeSlots(timeslots);
+                jobs[id] = undefined; // remove this job from our list of active jobs
 
-                        doReservation(time, id, validTimeSlots, session);
+              }, function (err) {
+                console.log(err);
+              });
 
-                        jobs[id] = undefined; // remove this job from our list of active jobs
-
-                      },
-                      function (err) {
-                        console.log(err);
-                      });
-
-
-                }, function (err) {
-                  console.log(err);
-                });
-            }
           });
       },
       function () {
@@ -495,7 +436,9 @@ module.exports = function (Scheduler) {
 
       record.data.golfers.push({
         name: golfer.name.toString(),
-        id: golfer.id.toString()
+        id: golfer.id.toString(),
+        username: golfer.username.toString(),
+        ghin: golfer.ghin.toString()
       });
     }
 

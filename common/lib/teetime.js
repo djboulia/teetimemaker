@@ -33,13 +33,9 @@ var TeeTime = function (reservation) {
   };
 
   /**
-   * [djb 08/18/2020] The *$^!%% tee sheet system decided to move
-   * back to just a single time which opens at 6:45AM vs. opening
-   * at three different times.
-   * 
    * calculate the times we can actually book this tee
-   * time.  the tee sheet opens at 6:45 three days before for 
-   * Sat/Sun, and 7:30am 14 days before for Tues-Thu
+   * time.  the tee sheet opens at 7:00AM three days before for 
+   * Sat/Sun, and 7:15AM 14 days before for Tues-Thu
    * Monday the course is normally closed, except for key
    * holidays where it's treated like a weekend.
    * 
@@ -62,8 +58,8 @@ var TeeTime = function (reservation) {
       // Tues-Fri is a 14 day window, back up appropriately
       m.subtract(14, 'days');
 
-      // tee sheet opens at 7:30am on weekdays with new tee sheet rules
-      m.hours(7).minutes(30);
+      // tee sheet opens at 7:15am on weekdays with new tee sheet rules
+      m.hours(7).minutes(15);
 
       var date = new Date(m.utc().format());
       dates.push(new Date(date.getTime() + delta));
@@ -71,8 +67,10 @@ var TeeTime = function (reservation) {
       // Sat/Sun/Mon are a 3 day window, back up appropriately
       m.subtract(3, 'days');
 
+      // [10/13/2020] NEW tee time system.  7AM for weekends, 7:15AM weekdays
+      //
       // [8/18/2020] changed this BACK to a single time for weekends
-      //             ith tee sheet opening at 6:45AM for all courses
+      //             with tee sheet opening at 6:45AM for all courses
       //
       // [6/30/2020] changed this to deal with tee sheet opening at 
       //             6:40, 6:50 and 7:00am due to COVID tee sheet changes
@@ -84,7 +82,7 @@ var TeeTime = function (reservation) {
       // // sure we get in before anyone else (i.e. 6:58 AM the day the sheet opens)
       // m.hours(6).minutes(58);
 
-      m.hours(6).minutes(45);
+      m.hours(7).minutes(0);
 
       var date = new Date(m.utc().format());      
       dates.push(new Date(date.getTime() + delta));
