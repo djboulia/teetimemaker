@@ -85,7 +85,7 @@ class PlayerPicker extends Component {
     // if we didn't find them in our buddy list, look in search
     // results
     const searchResults = this.state.searchResults;
-    
+
     player = PlayerUtils.findById(searchResults, id);
     if (player) {
       return player;
@@ -196,7 +196,7 @@ class PlayerPicker extends Component {
    */
   handleSearchResults(results) {
     // remember last search results for next search
-    this.setState({searchResults: results});
+    this.stateChange({searchResults: results});
   }
 
   getChoices(player) {
