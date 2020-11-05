@@ -58,7 +58,7 @@ class Player extends Component {
     let input = null;
     const player = (this.props.value) ? this.props.value : undefined;
     const username = (player) ? player.username : '';
-    console.log("Player: searchResults ", this.props.searchResults);
+    // console.log("Player: searchResults ", this.props.searchResults);
 
     if (this.props.self) {
       console.log("Player: self value: " + JSON.stringify(player))
@@ -70,8 +70,7 @@ class Player extends Component {
 
     } else {
       console.log("Player: render value " + JSON.stringify(player));
-      console.log("choices " + JSON.stringify(this.props.choices));
-      console.log("search results ", this.props.searchResults);
+      // console.log("choices " + JSON.stringify(this.props.choices));
   
       // editable input field has select-able options and a search button
       input = (

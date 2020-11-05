@@ -72,10 +72,6 @@ class PlayerSearchModal extends Component {
 
   }
 
-  componentDidMount() {
-    console.log("componentDidMount");
-  }
-
   searchComplete(results) {
     console.log("searchComplete: results: " + JSON.stringify(results));
 

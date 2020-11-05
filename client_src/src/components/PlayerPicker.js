@@ -2,43 +2,16 @@ import React, {Component} from 'react';
 import {Table} from 'react-materialize';
 import '../App.css';
 import Player from './Player';
+import PlayerUtils from '../utils/PlayerUtils';
 import Buddies from '../utils/Buddies';
-
-const isSameId = function( id1, id2) {
-  return (id1 === id2);
-}
-
-const isSamePlayer = function( player1, player2) {
-  return (isSameId(player1.username, player2.username));
-}
-
-const validBuddy = function (buddy, player, foursome) {
-  if (isSamePlayer(buddy, player)) {
-    // always include the active player in the list
-    return true;
-  }
-
-  // look at other players already in the foursome and take those out of the
-  // buddies choices
-
-  for (let i = 0; i < foursome.length; i++) {
-    const currentPlayer = foursome[i];
-
-    if (isSamePlayer(buddy, currentPlayer)) {
-      return false;
-    }
-
-  }
-
-  return true;
-}
 
 /**
  * return true if the buddy exists in our list. check the owner id as well
  */
 const isBuddy = function (player, owner, buddies) {
+  
   // count the tee time owner as a buddy
-  if (isSamePlayer(player, owner)) {
+  if (PlayerUtils.isSamePlayer(player, owner)) {
     return true;
   }
 
@@ -47,7 +20,7 @@ const isBuddy = function (player, owner, buddies) {
   for (let i = 0; i < buddies.length; i++) {
     const buddy = buddies[i];
 
-    if (isSamePlayer(buddy, player)) {
+    if (PlayerUtils.isSamePlayer(buddy, player)) {
       found = true;
       break;
     }
@@ -58,7 +31,7 @@ const isBuddy = function (player, owner, buddies) {
 
 const isInFoursome = function (player, owner, foursome) {
   // count the tee tiee owner as part of the foursome
-  if (isSamePlayer(player, owner)) {
+  if (PlayerUtils.isSamePlayer(player, owner)) {
     return true;
   }
 
@@ -67,7 +40,7 @@ const isInFoursome = function (player, owner, foursome) {
   for (let i = 0; i < foursome.length; i++) {
     const golfer = foursome[i];
 
-    if (isSamePlayer(golfer, player)) {
+    if (PlayerUtils.isSamePlayer(golfer, player)) {
       found = true;
       break;
     } 
@@ -75,12 +48,6 @@ const isInFoursome = function (player, owner, foursome) {
 
   return found;
 }
-
-const available = {
-  name: "Available",
-  username: "----"
-};
-
 
 class PlayerPicker extends Component {
 
@@ -97,38 +64,35 @@ class PlayerPicker extends Component {
       .handleSelectionChanged
       .bind(this);
 
-      this.handleSearchResults = this
+    this.handleSearchResults = this
       .handleSearchResults
       .bind(this);
 
+    this.getChoices = this
+      .getChoices
+      .bind(this);
   }
 
-  findPlayer(username) {
+  findPlayer(id) {
     const buddies = Buddies.get();
-
     console.log("findPlayer: buddies " + JSON.stringify(buddies));
 
-    for (let i = 0; i < buddies.length; i++) {
-      const buddy = buddies[i];
-
-      if (isSameId(buddy.username, username)) {
-        return buddy;
-      }
+    let player = PlayerUtils.findById(buddies, id);
+    if (player) {
+      return player;
     }
 
     // if we didn't find them in our buddy list, look in search
     // results
     const searchResults = this.state.searchResults;
-    for (let i = 0; i < searchResults.length; i++) {
-      const result = searchResults[i];
-
-      if (isSameId(result.username, username)) {
-        return result;
-      }
+    
+    player = PlayerUtils.findById(searchResults, id);
+    if (player) {
+      return player;
     }
 
-    console.log("Warning! username " + username + " not found!");
-    return available;
+    console.log("Warning! id " + id + " not found!");
+    return PlayerUtils.getEmptyPlaceHolder();
   }
 
   /**
@@ -169,11 +133,11 @@ class PlayerPicker extends Component {
         let players = this.state.players;
         if (id >= players.length) {
           // add it to the end
-          if (player.name !== "Available" && !isSamePlayer(player, owner)) {
+          if (!PlayerUtils.isEmpty(player) && !PlayerUtils.isSamePlayer(player, owner)) {
             players.push(player);
           }
         } else {
-          if (player.name === "Available" || isSamePlayer(player, owner)) {
+          if (PlayerUtils.isEmpty(player) || PlayerUtils.isSamePlayer(player, owner)) {
             // remove the entry
             players.splice(id, 1);
           } else {
@@ -186,7 +150,7 @@ class PlayerPicker extends Component {
         // look for that here, add it to our "buddies" list if so
         const buddies = Buddies.get();
 
-        if (!isBuddy(player, owner, buddies)) {
+        if (!PlayerUtils.isEmpty(player) && !isBuddy(player, owner, buddies)) {
           console.log("adding buddy : " + JSON.stringify(player));
           Buddies.add(player);
         }
@@ -203,7 +167,7 @@ class PlayerPicker extends Component {
    * 
    * @param {Array} results list of players resulting from the search
    */
-  filterSearchResults(results) {
+  filterResults(results) {
     const players = this.state.players;
     const owner = this.state.owner;
 
@@ -220,7 +184,7 @@ class PlayerPicker extends Component {
       }
     }
 
-    console.log("filterSearchzResults returning: " + JSON.stringify(filteredResults));
+    console.log("filterResults returning: " + JSON.stringify(filteredResults));
     return filteredResults;
   }
 
@@ -235,21 +199,20 @@ class PlayerPicker extends Component {
     this.setState({searchResults: results});
   }
 
-  getChoices(player, players, buddies) {
+  getChoices(player) {
     // build a list of drop down choices for this selection
-    let items = [];
+    const buddies = Buddies.get();
+    const available = PlayerUtils.getEmptyPlaceHolder();
 
-    items.push(available);
+    const items = [];
+    items.push(available);  // first choice is always the available slot
 
-    for (let i = 0; i < buddies.length; i++) {
-      var buddy = buddies[i];
-
-      if (validBuddy(buddy, player, players)) {
-        items.push(buddy);
-      }
+    if (!PlayerUtils.isEmpty(player)) { // if this is a valid player, add it to the list
+      items.push(player);
     }
 
-    return items;
+    const buddylist = this.filterResults(buddies);
+    return items.concat(buddylist);
   }
 
   render() {
@@ -257,13 +220,13 @@ class PlayerPicker extends Component {
     console.log("players: " + JSON.stringify(this.state.players));
 
     const players = this.state.players;
-    const buddies = Buddies.get();
-    const searchResults = this.filterSearchResults(this.state.searchResults); 
+    const searchResults = this.filterResults(this.state.searchResults); 
     const getChoices = this.getChoices;
     const handleSelectionChanged = this.handleSelectionChanged;
     const handleSearchResults = this.handleSearchResults;
 
-    let foursome = [];
+    const foursome = [];
+    const available = PlayerUtils.getEmptyPlaceHolder();
 
     for (let i = 0; i < players.length; i++) {
       let player = players[i];
@@ -312,7 +275,7 @@ class PlayerPicker extends Component {
                     <Player
                       id={"Player_" + index}
                       value={player}
-                      choices={getChoices(player, players, buddies)}
+                      choices={getChoices(player)}
                       searchResults={searchResults}
                       onChange={handleSelectionChanged}
                       onSearchResults={handleSearchResults}>
