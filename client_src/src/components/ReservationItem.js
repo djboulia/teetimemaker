@@ -11,7 +11,6 @@ class ReservationItem extends Component{
     }
   }
 
-
   render(){
     const reservation = Formatter.teeTime(this.state.item.teetime);
     const courses = Formatter.courses(this.state.item.courses);

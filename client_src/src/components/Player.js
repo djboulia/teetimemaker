@@ -13,6 +13,13 @@ import '../App.css';
  *  onChangeSearch {Function} fired when a search results in a change
  */
 class Player extends Component {
+  constructor(props) {
+    super(props);
+
+    this.onChangeSearch = this
+      .onChangeSearch
+      .bind(this);
+  }
 
   createSelectItems() {
     let items = [];
@@ -22,7 +29,7 @@ class Player extends Component {
         var choice = this.props.choices[i];
 
         items.push(
-          <option key={i} value={choice.id.toString()}>{choice.name}</option>
+          <option key={i} value={choice.username}>{choice.name}</option>
         );
       }
     }
@@ -30,11 +37,28 @@ class Player extends Component {
     return items;
   }
 
+  onChangeSearch(player) {
+    console.log("Player.onChangeSearch: ", player);
+
+    // fake up a change event when the search changes
+    if (this.props.onChange) {
+      const e = {
+        target : {
+          id: this.props.id,
+          value: player.username
+        }
+      };
+
+      this.props.onChange(e);
+    }
+  }
+
   render() {
 
     let input = null;
     const player = (this.props.value) ? this.props.value : undefined;
-    const playerId = (player) ? player.id.toString() : '';
+    const username = (player) ? player.username : '';
+    console.log("Player: searchResults ", this.props.searchResults);
 
     if (this.props.self) {
       console.log("Player: self value: " + JSON.stringify(player))
@@ -47,6 +71,7 @@ class Player extends Component {
     } else {
       console.log("Player: render value " + JSON.stringify(player));
       console.log("choices " + JSON.stringify(this.props.choices));
+      console.log("search results ", this.props.searchResults);
   
       // editable input field has select-able options and a search button
       input = (
@@ -54,14 +79,15 @@ class Player extends Component {
           <Select
             s={6}
             id={this.props.id}
-            value={playerId}
+            value={username}
             onChange={this.props.onChange}>
             {this.createSelectItems()}
           </Select>
 
           <PlayerSearchModal 
-            onClose={this.props.onChangeSearch}
-            onFilterSearch={this.props.onFilterSearch}>
+            searchResults={this.props.searchResults}
+            onClose={this.onChangeSearch}
+            onSearchResults={this.props.onSearchResults}>
           </PlayerSearchModal>
         </div>
       )

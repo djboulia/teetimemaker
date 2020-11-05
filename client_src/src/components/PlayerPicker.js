@@ -4,15 +4,15 @@ import '../App.css';
 import Player from './Player';
 import Buddies from '../utils/Buddies';
 
-let isSameId = function( id1, id2) {
-  return (id1.toString() === id2.toString());
+const isSameId = function( id1, id2) {
+  return (id1 === id2);
 }
 
-let isSamePlayer = function( player1, player2) {
-  return (isSameId(player1.id, player2.id));
+const isSamePlayer = function( player1, player2) {
+  return (isSameId(player1.username, player2.username));
 }
 
-let validBuddy = function (buddy, player, foursome) {
+const validBuddy = function (buddy, player, foursome) {
   if (isSamePlayer(buddy, player)) {
     // always include the active player in the list
     return true;
@@ -36,7 +36,7 @@ let validBuddy = function (buddy, player, foursome) {
 /**
  * return true if the buddy exists in our list. check the owner id as well
  */
-let isBuddy = function (player, owner, buddies) {
+const isBuddy = function (player, owner, buddies) {
   // count the tee time owner as a buddy
   if (isSamePlayer(player, owner)) {
     return true;
@@ -56,7 +56,7 @@ let isBuddy = function (player, owner, buddies) {
   return found;
 }
 
-let isInFoursome = function (player, owner, foursome) {
+const isInFoursome = function (player, owner, foursome) {
   // count the tee tiee owner as part of the foursome
   if (isSamePlayer(player, owner)) {
     return true;
@@ -76,9 +76,9 @@ let isInFoursome = function (player, owner, foursome) {
   return found;
 }
 
-let available = {
+const available = {
   name: "Available",
-  id: "0000"
+  username: "----"
 };
 
 
@@ -89,26 +89,21 @@ class PlayerPicker extends Component {
 
     this.state = {
       owner: props.owner, // owner of this tee time is always the first player
-
-      players: [
-      ]
+      players: [],
+      searchResults: []
     };
 
     this.handleSelectionChanged = this
       .handleSelectionChanged
       .bind(this);
 
-      this.handleSearchChanged = this
-      .handleSearchChanged
-      .bind(this);
-
-      this.handleSearchFilter = this
-      .handleSearchFilter
+      this.handleSearchResults = this
+      .handleSearchResults
       .bind(this);
 
   }
 
-  findPlayer(id) {
+  findPlayer(username) {
     const buddies = Buddies.get();
 
     console.log("findPlayer: buddies " + JSON.stringify(buddies));
@@ -116,11 +111,23 @@ class PlayerPicker extends Component {
     for (let i = 0; i < buddies.length; i++) {
       const buddy = buddies[i];
 
-      if (isSameId(buddy.id, id)) {
+      if (isSameId(buddy.username, username)) {
         return buddy;
       }
     }
 
+    // if we didn't find them in our buddy list, look in search
+    // results
+    const searchResults = this.state.searchResults;
+    for (let i = 0; i < searchResults.length; i++) {
+      const result = searchResults[i];
+
+      if (isSameId(result.username, username)) {
+        return result;
+      }
+    }
+
+    console.log("Warning! username " + username + " not found!");
     return available;
   }
 
@@ -154,7 +161,6 @@ class PlayerPicker extends Component {
         .substring(prefix.length);
 
       if (id >= 0 || id < 3) {
-
         console.log(JSON.stringify(this.state.players));
 
         let player = this.findPlayer(e.target.value);
@@ -176,6 +182,15 @@ class PlayerPicker extends Component {
           }
         }
 
+        // could be a totally new player added to the list.
+        // look for that here, add it to our "buddies" list if so
+        const buddies = Buddies.get();
+
+        if (!isBuddy(player, owner, buddies)) {
+          console.log("adding buddy : " + JSON.stringify(player));
+          Buddies.add(player);
+        }
+
         console.log("players: " + JSON.stringify(players));
 
         this.stateChange({players: players});
@@ -183,35 +198,12 @@ class PlayerPicker extends Component {
     }
   }
 
-  handleSearchChanged(result) {
-    console.log("handleSearchChanged : " + JSON.stringify(result));
-
-    const buddies = Buddies.get();
-    const players = this.state.players;
-    const owner = this.state.owner;
-
-    // search result could mean that a totally new player is added to the list.
-    // look for that here, add it to our "buddies" list if so
-    if (!isBuddy(result, owner, buddies)) {
-      Buddies.add(result);
-    }
-
-    // if the searched for player isn't in the foursome, add them
-    //
-    if (!isInFoursome(result, owner, players)) {
-      players.push(result);
-    }
-
-    this.stateChange({players: players});
-  }
-
   /**
-   * this hook gives us a chance to modify the results of the search.  we use this opportunity
-   * to take out invalid choices, e.g. people already in our foursome.
+   * look for players already in our foursome and remove them from the search results
    * 
    * @param {Array} results list of players resulting from the search
    */
-  handleSearchFilter(results) {
+  filterSearchResults(results) {
     const players = this.state.players;
     const owner = this.state.owner;
 
@@ -228,8 +220,19 @@ class PlayerPicker extends Component {
       }
     }
 
-    console.log("handleSearchFilter returning: " + JSON.stringify(filteredResults));
+    console.log("filterSearchzResults returning: " + JSON.stringify(filteredResults));
     return filteredResults;
+  }
+
+  /**
+   * called whenever a new search is executed.  we save the state so we can
+   * present prior searches the next time the search dialog is presented
+   * 
+   * @param {Array} results list of players resulting from the search
+   */
+  handleSearchResults(results) {
+    // remember last search results for next search
+    this.setState({searchResults: results});
   }
 
   getChoices(player, players, buddies) {
@@ -255,10 +258,10 @@ class PlayerPicker extends Component {
 
     const players = this.state.players;
     const buddies = Buddies.get();
+    const searchResults = this.filterSearchResults(this.state.searchResults); 
     const getChoices = this.getChoices;
     const handleSelectionChanged = this.handleSelectionChanged;
-    const handleSearchChanged = this.handleSearchChanged;
-    const handleSearchFilter = this.handleSearchFilter;
+    const handleSearchResults = this.handleSearchResults;
 
     let foursome = [];
 
@@ -310,9 +313,9 @@ class PlayerPicker extends Component {
                       id={"Player_" + index}
                       value={player}
                       choices={getChoices(player, players, buddies)}
+                      searchResults={searchResults}
                       onChange={handleSelectionChanged}
-                      onChangeSearch={handleSearchChanged}
-                      onFilterSearch={handleSearchFilter}>
+                      onSearchResults={handleSearchResults}>
                       </Player>
                   </td>
                 </tr>

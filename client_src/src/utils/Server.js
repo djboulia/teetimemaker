@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import Session from './Session';
+
 const UrlHandler = {
 
   /**
@@ -22,104 +24,12 @@ const UrlHandler = {
   }
 };
 
-
-const Session = {
-  storageKey: "session",
-
-  /**
-   * remove any existing session data
-   */
-  reset() {
-    console.log("session cleared");
-    localStorage.removeItem(this.storageKey);
-  },
-
-  /**
-   * set up a new session
-   * 
-   * @param {String} name human readable name for this user
-   * @param {Number} id golfer id for this user on the PWCC site
-   * @param {String} token session token
-   * @param {Integer} ttl time to live in millisecs
-   */
-  set(name, id, token, ttl) {
-    const data = {
-      name: name,
-      id: id,
-      token: token,
-      expires: new Date().getTime() + ttl,
-      ttl: ttl
-    }
-
-    localStorage.setItem(this.storageKey, JSON.stringify(data));
-    console.log(`token ${token} set`);
-  },
-
-  getSessionData() {
-    const str = localStorage.getItem(this.storageKey);
-
-    if (str) {
-      const data = JSON.parse(str);
-
-      if (data && data.expires) {
-        // check to see if it's expired
-        const now = new Date().getTime();
-        console.log(`expires ${data.expires} and now ${now}`);
-
-        if (now >= data.expires) {
-          // expired, remove the session from storage and return undefined
-          console.log("token expired, clearing session");
-          this.reset();
-        } else {
-          // valid session, return it
-          return data;
-        }
-      }
-    }
-
-    return undefined;
-  },
-
-  /**
-   * look for a previously stored token in our local storage
-   * if we have a valid login, there will be a key there
-   * if the key hasn't expired, return the token
-   */
-  getToken() {
-    let token = undefined;
-    const data = this.getSessionData();
-
-    if (data) {
-      token = data.token;
-    }
-
-    console.log("returning token " + token);
-    return token;
-  },
-
-  getUser() {
-    let user = {
-      name: undefined,
-      id: undefined
-    };
-    const data = this.getSessionData();
-
-    if (data) {
-      user.name = data.name;
-      user.id = data.id;
-    }
-
-    console.log("returning user " + JSON.stringify(user));
-    return user;
-  }
-};
-
 const Server = {
   isLoggedIn() {
     return Session.getToken() !== undefined;
   },
 
-  login(username, password) {
+  login(userid, password) {
 
     const result = {
       status: false,
@@ -131,7 +41,7 @@ const Server = {
 
     return new Promise((resolve, reject) => {
       return axios.post(UrlHandler.getUrl(`Members/login`), {
-        username: username,
+        username: userid,
         password: password
       }).then(res => {
         console.log(res);
@@ -139,10 +49,10 @@ const Server = {
 
         const userData = res.data.user;
         const name = (userData && userData.data) ? userData.data.name : undefined;
-        const id = (userData && userData.data) ? userData.data.id : undefined;
+        const username = (userData && userData.data) ? userData.data.id : undefined;  // ForeTees username is the id
         const token = res.data.id;
 
-        Session.set(name, id, token, res.data.ttl);
+        Session.create(name, username, token, res.data.ttl);
 
         result.status = true;
         result.msg = "Successfully Logged in";
@@ -310,6 +220,32 @@ const Server = {
 
       axios
         .delete(UrlHandler.getUrlWithToken(`Scheduler/${id}`, Session.getToken()))
+        .then(res => {
+          console.log(res);
+          console.log(res.data);
+
+          resolve(res.data);
+        })
+        .catch((e) => {
+          reject(e);
+        })
+    })
+
+  },
+
+  schedulerHistory() {
+    const self = this;
+
+    return new Promise((resolve, reject) => {
+      if (!self.isLoggedIn()) {
+        const str = "Not logged in, log in first";
+        console.log(str);
+        reject(str);
+        return;
+      }
+
+      axios
+        .get(UrlHandler.getUrlWithToken(`Scheduler/history`, Session.getToken()))
         .then(res => {
           console.log(res);
           console.log(res.data);

@@ -9,7 +9,7 @@ let getUserName = function() {
 }
 const LocalStorage = {
   getStorageKey() {
-    return getUserName() + "_buddies";
+    return getUserName() + "_buddies_v2";
   },
 
   /**

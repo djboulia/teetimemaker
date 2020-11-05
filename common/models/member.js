@@ -5,7 +5,7 @@ var TeeTimeAPI = require('../lib/pwcc/teetimeapi.js');
 var logger = require('../lib/logger.js');
 var app = require('../../server/server');
 
-var newMemberRecord = function (username, password, name, id) {
+var newMemberRecord = function (username, password, info) {
   var encryptedPassword = Password.encrypt(password);
   var str = "username = " + username + ", password = " + encryptedPassword;
 
@@ -16,16 +16,21 @@ var newMemberRecord = function (username, password, name, id) {
   record.username = username;
   record.password = password;
 
+  if (!info || !info.teeSheetInfo) {
+    console.log("Warning! Invalid user info found" + JSON.stringify(info));
+  }
+
   record.data = {};
   record.data.username = username;
   record.data.password = encryptedPassword;
-  record.data.name = name;
-  record.data.id = id;
+  record.data.info = info;
+  record.data.name = info.name;
+  record.data.id = info.teeSheetInfo.user_name;
 
   return record;
 };
 
-var updateMemberRecord = function (record, username, password, name, id) {
+var updateMemberRecord = function (record, username, password, info) {
   var encryptedPassword = Password.encrypt(password);
   var str = "username = " + username + ", password = " + encryptedPassword;
 
@@ -34,10 +39,15 @@ var updateMemberRecord = function (record, username, password, name, id) {
   record.username = username;
   record.password = password;
 
+  if (!info || !info.teeSheetInfo) {
+    console.log("Warning! Invalid user info found" + JSON.stringify(info));
+  }
+
   record.data.username = username;
   record.data.password = encryptedPassword;
-  record.data.name = name;
-  record.data.id = id;
+  record.data.info = info;
+  record.data.name = info.name;
+  record.data.id = info.teeSheetInfo.user_name;
 
   return record;
 };
@@ -374,9 +384,10 @@ module.exports = function (Member) {
               })
               .then(function (result) {
                   // result of info() call
+                  console.log("Member info: " + JSON.stringify(result));
 
                   // add a new entry to the database
-                  var record = newMemberRecord(username, password, result.name, result.id);
+                  var record = newMemberRecord(username, password, result);
 
                   Member.Promise.create(record)
                     .then(function (record) {
@@ -430,8 +441,9 @@ module.exports = function (Member) {
             })
             .then(function (result) {
                 // result of info() call
+                console.log("Member info: " + JSON.stringify(result));
 
-                updateMemberRecord(record, username, password, result.name, result.id);
+                updateMemberRecord(record, username, password, result);
 
                 // update the backend database
                 Member.Promise.update(record)

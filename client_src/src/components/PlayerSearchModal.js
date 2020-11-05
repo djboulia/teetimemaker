@@ -27,19 +27,11 @@ class PlayerSearch {
   }
 }
 
-let defaultSearchState = function() {
-  return {
-    searchtext: "",
-    results: [],
-    selected: undefined
-  };
-}
-
 /**
  * props:
- *  onClose - function - if provided, will be called with the result of the search
- * 
- * TODO: remember last search result to speed up modal dialog
+ *  searchResults - array - the search results to display in the modal
+ *  onSearchResults - function - if provided, will be called when a new search completes
+ *  onClose - function - if provided, will be called with the player selected
  */
 class PlayerSearchModal extends Component {
 
@@ -47,7 +39,10 @@ class PlayerSearchModal extends Component {
     super(props);
 
     this.state = {
-      search: defaultSearchState(),
+      search: {
+        searchtext: "",
+        selected: undefined
+      },
       currentSearch: null
     }
 
@@ -77,16 +72,19 @@ class PlayerSearchModal extends Component {
 
   }
 
+  componentDidMount() {
+    console.log("componentDidMount");
+  }
+
   searchComplete(results) {
     console.log("searchComplete: results: " + JSON.stringify(results));
 
-    // give the parent an opportunity to filter the search
-    if (this.props.onFilterSearch) {
-      results = this.props.onFilterSearch(results);
+    // notify the parent when search results change
+    if (this.props.onSearchResults) {
+      this.props.onSearchResults(results);
     }
 
     let search = this.state.search;
-    search.results = results;
     search.selected = undefined;  // new search result -- remove any current selection
 
     this.setState({search: search, currentSearch: null});
@@ -95,14 +93,15 @@ class PlayerSearchModal extends Component {
   handleModalClosed() {
     console.log("Player: modal closed");
     let search = this.state.search;
+    const searchResults = this.props.searchResults;
 
     console.log("Player: search " + JSON.stringify(search));
     let player = null;
 
     if (search.selected && this.props.onClose) {
 
-      for (let i=0; i<search.results.length; i++) {
-        let result = search.results[i];
+      for (let i=0; i<searchResults.length; i++) {
+        let result = searchResults[i];
         if (result.id === search.selected) {
           player = result;
         }
@@ -118,10 +117,12 @@ class PlayerSearchModal extends Component {
   }
 
   handleModalReset() {
-    console.log("Player: modal search reset");
+    const search = this.state.search;
+    search.searchtext = "";
+    search.selected = undefined;
 
-    // reset the search state for next time
-    this.setState({search: defaultSearchState()});
+    this.setState({search: search});
+    console.log("PlayerSearchModal: modal reset ");
   }
 
   handleModalInputChanged(e) {
@@ -163,11 +164,18 @@ class PlayerSearchModal extends Component {
     return true;
   }
 
+  /**
+   * NOTE: the search modal relies completely on the parent to provide it the search
+   *       results.  this.props.SearchResults is set by the parent to populate the search
+   *       list.  Even when a search is performed in this component, it calls the parent's
+   *       onSearchResult handler with the new search result.  The parent can then decide
+   *       what to change by changing the properties passed into this component.
+   */
   createSearchResults() {
     const items = [];
     const search = this.state.search;
+    const searchResults = this.props.searchResults;
     const currentSearch = this.state.currentSearch;
-
 
     if (currentSearch) {
       // search in progress, indicate that to the user
@@ -178,7 +186,7 @@ class PlayerSearchModal extends Component {
             {"Searching..."}
         </CollectionItem>
       );
-    } else if (search.results.length ===0) {
+    } else if (!searchResults || searchResults.length ===0) {
       // search complete, no results
       items.push(
         <CollectionItem 
@@ -189,8 +197,8 @@ class PlayerSearchModal extends Component {
       );
     } else {
       // display search results
-      for (let i = 0; i < search.results.length; i++) {
-        var item = search.results[i];
+      for (let i = 0; i < searchResults.length; i++) {
+        var item = searchResults[i];
   
         if (search.selected === item.id) {
           console.log("setting id to selected " + item.id);
