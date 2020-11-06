@@ -1,5 +1,5 @@
-import React, {Component} from 'react';
-import {TextInput, Select, Row} from 'react-materialize';
+import React, { Component } from 'react';
+import { TextInput, Select, Row } from 'react-materialize';
 import PlayerSearchModal from './PlayerSearchModal';
 import '../App.css';
 
@@ -40,10 +40,10 @@ class Player extends Component {
   onChangeSearch(player) {
     console.log("Player.onChangeSearch: ", player);
 
-    // fake up a change event when the search changes
+    // fire a change event when the search changes
     if (this.props.onChange) {
       const e = {
-        target : {
+        target: {
           id: this.props.id,
           value: player.username
         }
@@ -64,14 +64,14 @@ class Player extends Component {
       console.log("Player: self value: " + JSON.stringify(player))
       input = (
         <div>
-          <TextInput s={6} id={this.props.id} type="text" defaultValue={player.name} disabled/>
+          <TextInput s={6} id={this.props.id} type="text" defaultValue={player.name} disabled />
         </div>
       )
 
     } else {
       console.log("Player: render value " + JSON.stringify(player));
       // console.log("choices " + JSON.stringify(this.props.choices));
-  
+
       // editable input field has select-able options and a search button
       input = (
         <div>
@@ -83,10 +83,11 @@ class Player extends Component {
             {this.createSelectItems()}
           </Select>
 
-          <PlayerSearchModal 
+          <PlayerSearchModal
             searchResults={this.props.searchResults}
+            searchInProgress={this.props.searchInProgress}
             onClose={this.onChangeSearch}
-            onSearchResults={this.props.onSearchResults}>
+            onSearch={this.props.onSearch}>
           </PlayerSearchModal>
         </div>
       )

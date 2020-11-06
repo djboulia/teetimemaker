@@ -1,37 +1,14 @@
-import React, {Component} from 'react';
-import {Button, TextInput, Row, Modal, Collection, CollectionItem} from 'react-materialize';
-import Server from '../utils/Server';
+import React, { Component } from 'react';
+import { Button, TextInput, Row, Modal, Collection, CollectionItem } from 'react-materialize';
 import '../App.css';
 
-class PlayerSearch {
-  constructor(text) {
-    this.text = text;
-    this.canceled = false;
-  }
-
-  cancel() {
-    this.cb = null;
-    console.log("player search canceled");
-  }
-
-  doSearch(cb) {
-
-    Server.memberSearch(this.text)
-    .then((results) => {
-      cb(results);
-    })
-    .catch((e) => {
-      console.log("error on search: " + JSON.stringify(e));
-    })
-
-  }
-}
 
 /**
  * props:
  *  searchResults - array - the search results to display in the modal
- *  onSearchResults - function - if provided, will be called when a new search completes
- *  onClose - function - if provided, will be called with the player selected
+ *  searchInProgress - boolean - true if a search is underway
+ *  onSearch - function - if provided, will be called to fire a new search
+ *  onClose - function - if provided, will be called with the player selected from the search dialgo
  */
 class PlayerSearchModal extends Component {
 
@@ -42,13 +19,8 @@ class PlayerSearchModal extends Component {
       search: {
         searchtext: "",
         selected: undefined
-      },
-      currentSearch: null
+      }
     }
-
-    this.searchComplete = this
-      .searchComplete
-      .bind(this);
 
     this.handleModalClosed = this
       .handleModalClosed
@@ -58,11 +30,11 @@ class PlayerSearchModal extends Component {
       .handleModalReset
       .bind(this);
 
-      this.handleModalInputChanged = this
+    this.handleModalInputChanged = this
       .handleModalInputChanged
       .bind(this);
 
-      this.handleSearch = this
+    this.handleSearch = this
       .handleSearch
       .bind(this);
 
@@ -70,20 +42,6 @@ class PlayerSearchModal extends Component {
       .handleItemClicked
       .bind(this);
 
-  }
-
-  searchComplete(results) {
-    console.log("searchComplete: results: " + JSON.stringify(results));
-
-    // notify the parent when search results change
-    if (this.props.onSearchResults) {
-      this.props.onSearchResults(results);
-    }
-
-    let search = this.state.search;
-    search.selected = undefined;  // new search result -- remove any current selection
-
-    this.setState({search: search, currentSearch: null});
   }
 
   handleModalClosed() {
@@ -96,7 +54,7 @@ class PlayerSearchModal extends Component {
 
     if (search.selected && this.props.onClose) {
 
-      for (let i=0; i<searchResults.length; i++) {
+      for (let i = 0; i < searchResults.length; i++) {
         let result = searchResults[i];
         if (result.id === search.selected) {
           player = result;
@@ -117,7 +75,7 @@ class PlayerSearchModal extends Component {
     search.searchtext = "";
     search.selected = undefined;
 
-    this.setState({search: search});
+    this.setState({ search: search });
     console.log("PlayerSearchModal: modal reset ");
   }
 
@@ -128,26 +86,27 @@ class PlayerSearchModal extends Component {
     console.log("Player: search " + JSON.stringify(search));
     search.searchtext = e.target.value;
 
-    this.setState({ "search" : search });
+    this.setState({ "search": search });
   }
 
+  /**
+   * Call the provided search handler from the parent component to perform a search
+   * The parent will update props.searchInProgress and props.searchResults to
+   * indicate start and completion of the search
+   * 
+   * @param {Object} e 
+   */
   handleSearch(e) {
-    this.fireSearch();
-  }
-
-  fireSearch() {
     let search = this.state.search;
     console.log("Player: search " + JSON.stringify(search));
 
-    let currentSearch = this.state.currentSearch;
-    if (currentSearch) {  // cancel in progress search before doing a new one
-      currentSearch.cancel();
+    if (this.props.onSearch) {
+      this.props.onSearch(search.searchtext);
     }
 
-    currentSearch = new PlayerSearch(search.searchtext);
-    currentSearch.doSearch(this.searchComplete);
+    search.selected = undefined;  // new search -- remove any current selection
 
-    this.setState({search: search, currentSearch: currentSearch});
+    this.setState({ search: search });
   }
 
   handleItemClicked(e) {
@@ -155,78 +114,75 @@ class PlayerSearchModal extends Component {
     let search = this.state.search;
     search.selected = Number.parseInt(e.target.id);
 
-    this.setState( {search: search} );
+    this.setState({ search: search });
 
     return true;
   }
 
   /**
-   * NOTE: the search modal relies completely on the parent to provide it the search
-   *       results.  this.props.SearchResults is set by the parent to populate the search
-   *       list.  Even when a search is performed in this component, it calls the parent's
-   *       onSearchResult handler with the new search result.  The parent can then decide
-   *       what to change by changing the properties passed into this component.
+   * the search modal relies  on the parent to provide it the search
+   * results.  this.props.SearchResults is set by the parent to populate the results
    */
   createSearchResults() {
     const items = [];
     const search = this.state.search;
+    const searchInProgress = this.props.searchInProgress;
     const searchResults = this.props.searchResults;
-    const currentSearch = this.state.currentSearch;
 
-    if (currentSearch) {
+    if (searchInProgress) {
       // search in progress, indicate that to the user
       items.push(
-        <CollectionItem 
-          key={0} 
+        <CollectionItem
+          key={0}
           id={0}>
-            {"Searching..."}
+          {"Searching..."}
         </CollectionItem>
       );
-    } else if (!searchResults || searchResults.length ===0) {
+    } else if (!searchResults || searchResults.length === 0) {
       // search complete, no results
       items.push(
-        <CollectionItem 
-          key={0} 
+        <CollectionItem
+          key={0}
           id={0}>
-            {"No results"}
+          {"No results"}
         </CollectionItem>
       );
     } else {
       // display search results
       for (let i = 0; i < searchResults.length; i++) {
         var item = searchResults[i];
-  
+
         if (search.selected === item.id) {
           console.log("setting id to selected " + item.id);
-  
+
           items.push(
-            <CollectionItem 
-              key={i} 
-              id={item.id.toString()} 
-              onClick={this.handleItemClicked} 
+            <CollectionItem
+              key={i}
+              id={item.id.toString()}
+              onClick={this.handleItemClicked}
               className='active'>
-                {item.name}
+              {item.name}
             </CollectionItem>
           );
-    
+
         } else {
           items.push(
-            <CollectionItem 
-              key={i} 
-              id={item.id.toString()} 
+            <CollectionItem
+              key={i}
+              id={item.id.toString()}
               onClick={this.handleItemClicked}>
-                {item.name}
+              {item.name}
             </CollectionItem>
           );
-          }
-      }  
+        }
+      }
     }
 
-    return(
-    <Collection
-      id={"searchresults"}>
+    return (
+      <Collection
+        id={"searchresults"}>
         {items}
-    </Collection>);
+      </Collection>);
   }
 
   render() {
@@ -235,55 +191,54 @@ class PlayerSearchModal extends Component {
     const okDisabled = this.state.search.selected ? false : true;
     const searchDisabled = this.state.search.searchtext !== "" ? false : true;
 
-    return(
+    return (
       <div className="col input-field s6">
-      <Modal
-        header='Search for Players'
-        fixedFooter
-        trigger={<Button >Search...</Button>}
-        actions={<Row> 
-                    <Button 
-                      modal="close" 
-                      disabled={okDisabled} 
-                      waves="light" 
-                      onClick={this.handleModalClosed}>
-                        OK
+        <Modal
+          header='Search for Players'
+          fixedFooter
+          trigger={<Button >Search...</Button>}
+          actions={<Row>
+            <Button
+              modal="close"
+              disabled={okDisabled}
+              waves="light"
+              onClick={this.handleModalClosed}>
+              OK
                     </Button>
 
-                    <span className="spacer"></span>
+            <span className="spacer"></span>
 
-                    <Button 
-                      modal = "close" 
-                      waves = "light"  
-                      onClick={this.handleModalReset} 
-                      className = "red darken-2" > 
-                        Cancel 
-                    </Button> 
-                  </Row>}>
-        <p>Type the name of the member to search for:</p>
-  
-        <Row>
-          <TextInput
-            s={6}
-            id={"searchtext"}
-            placeholder="Type Last Name Here"
-            value={this.state.search.searchtext}
-            onChange={this.handleModalInputChanged}>
-          </TextInput>
+            <Button
+              modal="close"
+              waves="light"
+              onClick={this.handleModalReset}
+              className="red darken-2" >
+              Cancel
+                    </Button>
+          </Row>}>
+          <p>Type the name of the member to search for:</p>
 
-          <Button 
-            onClick={this.handleSearch}
-            disabled={searchDisabled}>
+          <Row>
+            <TextInput
+              s={6}
+              id={"searchtext"}
+              placeholder="Type Last Name Here"
+              value={this.state.search.searchtext}
+              onChange={this.handleModalInputChanged}>
+            </TextInput>
+
+            <Button
+              onClick={this.handleSearch}
+              disabled={searchDisabled}>
               Search
           </Button>
-        </Row>
+          </Row>
 
-        {this.createSearchResults()}
+          {this.createSearchResults()}
 
-      </Modal>
-    </div>
+        </Modal>
+      </div>
     );
-
 
   }
 }

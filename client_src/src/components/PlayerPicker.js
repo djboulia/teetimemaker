@@ -1,15 +1,16 @@
-import React, {Component} from 'react';
-import {Table} from 'react-materialize';
+import React, { Component } from 'react';
+import { Table } from 'react-materialize';
 import '../App.css';
 import Player from './Player';
 import PlayerUtils from '../utils/PlayerUtils';
 import Buddies from '../utils/Buddies';
+import PlayerSearch from '../utils/PlayerSearch';
 
 /**
  * return true if the buddy exists in our list. check the owner id as well
  */
 const isBuddy = function (player, owner, buddies) {
-  
+
   // count the tee time owner as a buddy
   if (PlayerUtils.isSamePlayer(player, owner)) {
     return true;
@@ -43,7 +44,7 @@ const isInFoursome = function (player, owner, foursome) {
     if (PlayerUtils.isSamePlayer(golfer, player)) {
       found = true;
       break;
-    } 
+    }
   }
 
   return found;
@@ -57,15 +58,20 @@ class PlayerPicker extends Component {
     this.state = {
       owner: props.owner, // owner of this tee time is always the first player
       players: [],
-      searchResults: []
+      searchResults: [],
+      searching: undefined
     };
 
     this.handleSelectionChanged = this
       .handleSelectionChanged
       .bind(this);
 
-    this.handleSearchResults = this
-      .handleSearchResults
+    this.searchComplete = this
+      .searchComplete
+      .bind(this);
+
+    this.handleSearch = this
+      .handleSearch
       .bind(this);
 
     this.getChoices = this
@@ -116,7 +122,7 @@ class PlayerPicker extends Component {
     const prefix = "Player_";
 
     const owner = this.state.owner;
-    console.log("self:" +JSON.stringify(owner));
+    console.log("self:" + JSON.stringify(owner));
 
     if (e.target.id.startsWith(prefix)) {
       let id = e
@@ -157,7 +163,7 @@ class PlayerPicker extends Component {
 
         console.log("players: " + JSON.stringify(players));
 
-        this.stateChange({players: players});
+        this.stateChange({ players: players });
       }
     }
   }
@@ -174,7 +180,7 @@ class PlayerPicker extends Component {
     const filteredResults = [];
 
     //results should be an array of current search results.
-    for (let i=0; i<results.length; i++) {
+    for (let i = 0; i < results.length; i++) {
       const player = results[i];
 
       if (!isInFoursome(player, owner, players)) {
@@ -188,15 +194,28 @@ class PlayerPicker extends Component {
     return filteredResults;
   }
 
+  searchComplete(results) {
+    // set the search results and stop searching
+    console.log("search complete: ", results);
+    this.stateChange({ searchResults: results, searching: undefined });
+  }
+
   /**
    * called whenever a new search is executed.  we save the state so we can
    * present prior searches the next time the search dialog is presented
    * 
    * @param {Array} results list of players resulting from the search
    */
-  handleSearchResults(results) {
-    // remember last search results for next search
-    this.stateChange({searchResults: results});
+  handleSearch(searchtext) {
+    let searching = this.state.searching;
+    if (searching) {  // cancel in progress search before doing a new one
+      searching.cancel();
+    }
+
+    searching = new PlayerSearch(searchtext);
+    searching.doSearch(this.searchComplete);
+
+    this.stateChange({ searchResults: [], searching: searching });
   }
 
   getChoices(player) {
@@ -220,10 +239,11 @@ class PlayerPicker extends Component {
     console.log("players: " + JSON.stringify(this.state.players));
 
     const players = this.state.players;
-    const searchResults = this.filterResults(this.state.searchResults); 
+    const searchResults = this.filterResults(this.state.searchResults);
+    const searchInProgress = (this.state.searching) ? true : false;
     const getChoices = this.getChoices;
     const handleSelectionChanged = this.handleSelectionChanged;
-    const handleSearchResults = this.handleSearchResults;
+    const handleSearch = this.handleSearch;
 
     const foursome = [];
     const available = PlayerUtils.getEmptyPlaceHolder();
@@ -277,9 +297,10 @@ class PlayerPicker extends Component {
                       value={player}
                       choices={getChoices(player)}
                       searchResults={searchResults}
+                      searchInProgress={searchInProgress}
                       onChange={handleSelectionChanged}
-                      onSearchResults={handleSearchResults}>
-                      </Player>
+                      onSearch={handleSearch}>
+                    </Player>
                   </td>
                 </tr>
 
