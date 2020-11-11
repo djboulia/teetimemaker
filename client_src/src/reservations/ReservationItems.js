@@ -1,4 +1,9 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 import ReservationItem from './ReservationItem';
 import Server from '../utils/Server';
 
@@ -10,9 +15,7 @@ class ReservationItems extends Component {
       owner: props.owner,
       teetimes: []
     }
-  }
 
-  componentWillMount() {
     this.getTeeTimes();
   }
 
@@ -47,32 +50,28 @@ class ReservationItems extends Component {
         .state
         .teetimes
         .map((teetime, i) => {
-          return (<ReservationItem key={teetime.id} owner={owner} item={teetime}/>)
+          return (<ReservationItem key={teetime.id} owner={owner} item={teetime} />)
         })
-      : <tr>
-        <td></td>
-        <td>No upcoming reservations found.</td>
-        <td>
-          <a href="/reservations/add">Add a reservation.</a>
-        </td>
-      </tr>
+      : <TableRow>
+        <TableCell></TableCell>
+        <TableCell>No upcoming reservations found.</TableCell>
+        <TableCell><a href="/reservations/add">Add a reservation.</a></TableCell>
+      </TableRow>
 
     return (
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Golfers</th>
-              <th>Course Preference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reservations}
-          </tbody>
-        </table>
-      </div>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Date</TableCell>
+            <TableCell>Time</TableCell>
+            <TableCell>Golfers</TableCell>
+            <TableCell>Course Preference</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {reservations}
+        </TableBody>
+      </Table>
     )
   }
 }

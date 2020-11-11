@@ -1,6 +1,31 @@
-import React, {Component} from 'react';
-import {Checkbox, Table} from 'react-materialize';
-import '../App.css';
+import React, { Component } from 'react';
+import Checkbox from '@material-ui/core/Checkbox';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+
+const courseVisible = {
+  opacity: '1.0',
+  boxSizing: 'border-box',
+  transition: 'height 250ms 0ms, opacity 250ms 250ms'
+};
+
+const courseHide = {
+  border: 'solid 1px #2bbbad',
+  transition: 'height 250ms 250ms, opacity 250ms 0ms',
+  opacity: '0.0',
+  height: '0px'
+}
+
+const courseShow = {
+  border: 'solid 1px #2bbbad',
+  boxSizing: 'border-box',
+  transition: 'height 250ms 0ms, opacity 250ms 250ms'
+}
+
+
 
 class CoursePicker extends Component {
 
@@ -11,7 +36,7 @@ class CoursePicker extends Component {
       .handleChange
       .bind(this);
 
-    this.transitionTime = 200; // ms
+    this.transitionTime = 250; // ms
 
     this.state = {
       courses: [
@@ -58,15 +83,15 @@ class CoursePicker extends Component {
         course.selected = !course.selected;
         course.removed = true;
         course.added = false;
-        
+
         break;
       }
     }
 
     setTimeout(() => this.setState(() => {
       console.log("removing item " + value);
-      setTimeout(()=> this.showChange(value), this.transitionTime)
-      return {courses: courses};
+      setTimeout(() => this.showChange(value), this.transitionTime)
+      return { courses: courses };
     }), 250);
 
   }
@@ -104,8 +129,8 @@ class CoursePicker extends Component {
     }
 
     this.setState(() => {
-      setTimeout(()=> this.completeChange(value), this.transitionTime)
-      return {courses: courses};
+      setTimeout(() => this.completeChange(value), this.transitionTime)
+      return { courses: courses };
     });
 
   }
@@ -142,7 +167,7 @@ class CoursePicker extends Component {
       }
     }
 
-    this.stateChange({courses: courses});
+    this.stateChange({ courses: courses });
   }
 
   /**
@@ -166,7 +191,7 @@ class CoursePicker extends Component {
     const courses = this.state.courses;
     const selected = [];
 
-    for (let i=0; i<courses.length; i++) {
+    for (let i = 0; i < courses.length; i++) {
       const course = courses[i];
       if (course.selected === true) {
         selected.push(course.name);
@@ -206,47 +231,46 @@ class CoursePicker extends Component {
 
     let courses = this.state.courses;
     let order = this.order;
-    let classes = 'course';
-    let classesHide = 'course remove';
-    let classesShow = 'course add';
 
     return (
-      <div>
 
-        <Table>
-          <thead>
-            <tr>
-              <th data-field="id">Include</th>
-              <th data-field="name">Course</th>
-              <th data-field="price">Preference</th>
-            </tr>
-          </thead>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Include</TableCell>
+            <TableCell>Course</TableCell>
+            <TableCell>Preference</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {courses
+            .map(function (course, index) {
+              let rowClass = course.removed ? courseHide : course.added ? courseShow : courseVisible;
 
-          <tbody>
+              return <TableRow key={course.key} style={rowClass}>
+                <TableCell>
+                  <Checkbox
+                    name='group1'
+                    onChange={course.handleChange}
+                    value={course.key}
+                    color="secondary"
+                    checked={course.selected}
+                    label=' ' />
+                </TableCell>
 
-            {courses
-              .map(function (course, index) {
-                let rowClass = course.removed ? classesHide : course.added ? classesShow : classes;
+                <TableCell>
+                  {course.name}
+                </TableCell>
 
-                return <tr key={course.key} className={rowClass}>
-                  <td>
-                    <Checkbox
-                      name='group1'
-                      onChange={course.handleChange}
-                      value={course.key}
-                      checked={course.selected}
-                      label=' '/>
-                  </td>
-                  <td>{course.name}</td>
-                  <td>{order(course.selected, index)}</td>
-                </tr>
+                <TableCell>
+                  {order(course.selected, index)}
+                </TableCell>
+              </TableRow>
 
-              })}
+            })}
+        </TableBody>
+      </Table>
 
-          </tbody>
-        </Table>
-
-      </div>
     )
   }
 }

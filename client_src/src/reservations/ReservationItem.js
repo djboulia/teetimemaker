@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import {Link} from 'react-router-dom';
+import TableCell from '@material-ui/core/TableCell';
+import TableRow from '@material-ui/core/TableRow';
 import Formatter from '../utils/Formatter';
 
 class ReservationItem extends Component{
@@ -17,20 +19,20 @@ class ReservationItem extends Component{
     const golfers = Formatter.golfers(this.state.owner, this.state.item.golfers);
 
     return (
-      <tr>
-        <td>
+      <TableRow>
+        <TableCell>
         <Link to={`/reservations/${this.state.item.id}`}>{reservation.date}</Link>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
         <Link to={`/reservations/${this.state.item.id}`}>{reservation.time}</Link>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           {golfers}
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           {courses}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     )
   }
 }

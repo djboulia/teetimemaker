@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
-import { Button, TextInput, Row, Modal, Collection, CollectionItem } from 'react-materialize';
-import '../App.css';
+import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import { Container, DialogActions, DialogContent, Grid, Divider, List, ListItem, TextField } from '@material-ui/core';
+
+// import { Button, TextInput, Row, Modal, Collection, CollectionItem } from 'react-materialize';
 
 
 /**
@@ -19,8 +23,13 @@ class PlayerSearchModal extends Component {
       search: {
         searchtext: "",
         selected: undefined
-      }
+      },
+      open: false
     }
+
+    this.handleModalOpen = this
+      .handleModalOpen
+      .bind(this);
 
     this.handleModalClosed = this
       .handleModalClosed
@@ -42,6 +51,10 @@ class PlayerSearchModal extends Component {
       .handleItemClicked
       .bind(this);
 
+  }
+
+  handleModalOpen() {
+    this.setState({ open: true });
   }
 
   handleModalClosed() {
@@ -75,7 +88,7 @@ class PlayerSearchModal extends Component {
     search.searchtext = "";
     search.selected = undefined;
 
-    this.setState({ search: search });
+    this.setState({ search: search, open: false });
     console.log("PlayerSearchModal: modal reset ");
   }
 
@@ -132,22 +145,21 @@ class PlayerSearchModal extends Component {
     if (searchInProgress) {
       // search in progress, indicate that to the user
       items.push(
-        <CollectionItem
-          key={0}
-          id={0}>
+        <ListItem
+          key="0">
           {"Searching..."}
-        </CollectionItem>
+        </ListItem>
       );
     } else if (!searchResults || searchResults.length === 0) {
       // search complete, no results
       items.push(
-        <CollectionItem
-          key={0}
-          id={0}>
+        <ListItem
+          key="0">
           {"No results"}
-        </CollectionItem>
+        </ListItem>
       );
     } else {
+
       // display search results
       for (let i = 0; i < searchResults.length; i++) {
         var item = searchResults[i];
@@ -156,88 +168,145 @@ class PlayerSearchModal extends Component {
           console.log("setting id to selected " + item.id);
 
           items.push(
-            <CollectionItem
-              key={i}
+            <ListItem
+            key={i}
               id={item.id.toString()}
-              onClick={this.handleItemClicked}
-              className='active'>
+              selected
+              onClick={this.handleItemClicked}>
               {item.name}
-            </CollectionItem>
+            </ListItem>
           );
 
         } else {
           items.push(
-            <CollectionItem
+            <ListItem
               key={i}
               id={item.id.toString()}
               onClick={this.handleItemClicked}>
               {item.name}
-            </CollectionItem>
+            </ListItem>
           );
         }
+
       }
     }
 
     return (
-      <Collection
+      <List
+        style={{ minHeight: '200px', maxHeight: '200px', border:'1px solid #DDDDDD' }}
         id={"searchresults"}>
         {items}
-      </Collection>);
+      </List>);
   }
+
+
 
   render() {
 
     // ok button disabled until we make a selection 
     const okDisabled = this.state.search.selected ? false : true;
     const searchDisabled = this.state.search.searchtext !== "" ? false : true;
+    const open = this.state.open;
 
     return (
-      <div className="col input-field s6">
-        <Modal
-          header='Search for Players'
-          fixedFooter
-          trigger={<Button >Search...</Button>}
-          actions={<Row>
-            <Button
-              modal="close"
-              disabled={okDisabled}
-              waves="light"
-              onClick={this.handleModalClosed}>
-              OK
-                    </Button>
 
-            <span className="spacer"></span>
+      <div>
+        <Button variant="contained" color="secondary" onClick={this.handleModalOpen}>
+          Search...
+        </Button>
 
-            <Button
-              modal="close"
-              waves="light"
-              onClick={this.handleModalReset}
-              className="red darken-2" >
-              Cancel
-                    </Button>
-          </Row>}>
-          <p>Type the name of the member to search for:</p>
+        <Dialog
+          fullWidth={true}
+          maxWidth="sm"
+          aria-labelledby="simple-dialog-title"
+          open={open}
+        >
+          <DialogTitle id="simple-dialog-title">Search for Players</DialogTitle>
+          <Container maxWidth="lg" spacing={2}>
 
-          <Row>
-            <TextInput
-              s={6}
-              id={"searchtext"}
-              placeholder="Type Last Name Here"
-              value={this.state.search.searchtext}
-              onChange={this.handleModalInputChanged}>
-            </TextInput>
+            <p>Type the name of the member to search for:</p>
 
-            <Button
-              onClick={this.handleSearch}
-              disabled={searchDisabled}>
-              Search
-          </Button>
-          </Row>
+            <Grid container alignContent="center" direction="row">
+              <Grid item sm={6}>
+                <TextField
+                  id={'searchtext'}
+                  placeholder={"Type Last Name Here"}
+                  value={this.state.search.searchtext}
+                  onChange={this.handleModalInputChanged}>
+                </TextField>
 
-          {this.createSearchResults()}
+              </Grid>
+              <Grid item sm={6}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={this.handleSearch}
+                  disabled={searchDisabled}>
+                  Search
+                </Button>
+              </Grid>
+            </Grid>
+          </Container>
 
-        </Modal>
+          <DialogContent>
+            {this.createSearchResults()}
+          </DialogContent>
+
+          <DialogActions>
+            <Button variant="contained" onClick={this.handleModalReset}>Cancel</Button>
+            <Button disabled={okDisabled} variant="contained" color="secondary" onClick={this.handleModalClosed}>OK</Button>
+          </DialogActions>
+
+        </Dialog>
       </div>
+
+
+      // <div className="col input-field s6">
+      //   <Modal
+      //     header='Search for Players'
+      //     fixedFooter
+      //     trigger={<Button >Search...</Button>}
+      //     actions={<Row>
+      //       <Button
+      //         modal="close"
+      //         disabled={okDisabled}
+      //         waves="light"
+      //         onClick={this.handleModalClosed}>
+      //         OK
+      //               </Button>
+
+      //       <span className="spacer"></span>
+
+      //       <Button
+      //         modal="close"
+      //         waves="light"
+      //         onClick={this.handleModalReset}
+      //         className="red darken-2" >
+      //         Cancel
+      //               </Button>
+      //     </Row>}>
+      //     <p>Type the name of the member to search for:</p>
+
+      //     <Row>
+      //       <TextInput
+      //         s={6}
+      //         id={"searchtext"}
+      //         placeholder="Type Last Name Here"
+      //         value={this.state.search.searchtext}
+      //         onChange={this.handleModalInputChanged}>
+      //       </TextInput>
+
+      //       <Button
+      //         onClick={this.handleSearch}
+      //         disabled={searchDisabled}>
+      //         Search
+      //     </Button>
+      //     </Row>
+
+      //     {this.createSearchResults()}
+
+      //   </Modal>
+      // </div>
     );
 
   }

@@ -1,8 +1,10 @@
-import React, {Component} from 'react';
-import {Row, Button, TextInput} from 'react-materialize';
-import {Redirect} from 'react-router-dom'
-import Server from '../utils/Server';
-import '../App.css';
+import React, { Component } from 'react';
+import { Button, TextField } from '@material-ui/core';
+import Container from '@material-ui/core/Container';
+import { Redirect } from 'react-router-dom'
+import Dashboard from './Dashboard';
+import Title from './Title';
+import Server from './utils/Server';
 
 let statusMsg = (msg) => {
   const result = <p className="msg">{msg}</p>
@@ -21,7 +23,7 @@ class Login extends Component {
 
     this.state = {
       redirectToReferrer: false,
-      msg: statusMsg("Please log in.") 
+      msg: statusMsg("Please log in.")
     }
 
     this.handleUserNameChange = this
@@ -43,7 +45,7 @@ class Login extends Component {
       .login(this.state.username, this.state.password)
       .then((result) => {
         console.log("login result " + result.status);
-        
+
         this.setState({
           redirectToReferrer: result.status,
           msg: (result.status)
@@ -54,11 +56,11 @@ class Login extends Component {
   }
 
   handleUserNameChange(e) {
-    this.setState({username: e.target.value});
+    this.setState({ username: e.target.value });
   }
 
   handlePasswordChange(e) {
-    this.setState({password: e.target.value});
+    this.setState({ password: e.target.value });
   }
 
   /**
@@ -74,7 +76,7 @@ class Login extends Component {
   }
 
   render() {
-    const {from} = this.props.location.state || {
+    const { from } = this.props.location.state || {
       from: {
         pathname: '/'
       }
@@ -83,7 +85,7 @@ class Login extends Component {
 
     if (redirectToReferrer === true) {
       console.log("Redirecting to : " + from.pathname);
-      return <Redirect to={from}/>
+      return <Redirect to={from} />
     }
 
     const loginMsg = this.state.msg;
@@ -91,32 +93,38 @@ class Login extends Component {
     const self = this;
 
     return (
-      <div>
-        <h1>Login</h1>
+      <Dashboard>
+        <Container maxWidth="xs">
+          <Title>Login</Title>
 
-        {loginMsg}
+          {loginMsg}
 
-        <Row>
-          <TextInput
+          <TextField
             placeholder="PWCC User Name"
-            m={6}
+            margin="normal"
+            fullWidth
             label="User Name"
-            onChange={self.handleUserNameChange}/>
-        </Row>
+            onChange={self.handleUserNameChange} />
 
-        <Row>
-          <TextInput
+          <TextField
             type="password"
             label="password"
-            m={6}
+            margin="normal"
+            fullWidth
             onChange={self.handlePasswordChange}
-            onKeyPress={self.handleEnterKey}/>
-        </Row>
+            onKeyPress={self.handleEnterKey} />
 
-        <Button onClick={() => {
-          self.login();
-        }}>Log In</Button>
-      </div>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              self.login();
+            }}>Log In</Button>
+
+        </Container>
+
+      </Dashboard>
     )
   }
 }

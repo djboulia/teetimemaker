@@ -1,10 +1,13 @@
 import React, { Component } from 'react';
-import { Table } from 'react-materialize';
-import '../App.css';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 import Player from './Player';
-import PlayerUtils from '../utils/PlayerUtils';
-import Buddies from '../utils/Buddies';
-import PlayerSearch from '../utils/PlayerSearch';
+import PlayerUtils from '../../utils/PlayerUtils';
+import Buddies from '../../utils/Buddies';
+import PlayerSearch from '../../utils/PlayerSearch';
 
 /**
  * return true if the buddy exists in our list. check the owner id as well
@@ -116,7 +119,7 @@ class PlayerPicker extends Component {
   }
 
   handleSelectionChanged(e) {
-    console.log("handleSelectionChanged event : " + JSON.stringify(e.target.id));
+    console.log("handleSelectionChanged event : " + JSON.stringify(e.target));
     console.log("changed! " + e.target.value);
 
     const prefix = "Player_";
@@ -263,35 +266,30 @@ class PlayerPicker extends Component {
     }
 
     return (
-      <div>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell></TableCell>
+            <TableCell>Players</TableCell>
+          </TableRow>
+        </TableHead>
 
-        <Table>
-          <thead>
-            <tr>
-              <th data-field="pos"></th>
-              <th data-field="name">Players</th>
-            </tr>
-          </thead>
+        <TableBody>
+          <TableRow>
+            <TableCell>1</TableCell>
+            <TableCell><Player value={this.state.owner} self="true"></Player></TableCell>
+          </TableRow>
 
-          <tbody>
+          {foursome
+            .map(function (player, index) {
 
-            <tr>
-              <td>1</td>
-              <td>
-                <Player value={this.state.owner} self="true"></Player>
-              </td>
-            </tr>
+              return (
+                <TableRow key={index}>
+                  <TableCell>
+                    {index + 2}
+                  </TableCell>
 
-            {foursome
-              .map(function (player, index) {
-
-                return <tr key={index}>
-                  <td style={{
-                    padding: 0
-                  }}>{index + 2}</td>
-                  <td style={{
-                    padding: 0
-                  }}>
+                  <TableCell>
                     <Player
                       id={"Player_" + index}
                       value={player}
@@ -301,15 +299,16 @@ class PlayerPicker extends Component {
                       onChange={handleSelectionChanged}
                       onSearch={handleSearch}>
                     </Player>
-                  </td>
-                </tr>
+                  </TableCell>
 
-              })}
+                </TableRow>
+              );
 
-          </tbody>
-        </Table>
+            })}
 
-      </div>
+        </TableBody>
+
+      </Table>
     )
   }
 }

@@ -1,13 +1,16 @@
-import React, {Component, Fragment} from 'react';
-import {Select} from 'react-materialize';
+import React, { Component, Fragment } from 'react';
+import FormControl from '@material-ui/core/FormControl';
+import InputLabel from '@material-ui/core/InputLabel';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 
 class TeeTimePicker extends Component {
   constructor(props) {
     super(props);
 
     this.handleSelectionChanged = this
-    .handleSelectionChanged
-    .bind(this);
+      .handleSelectionChanged
+      .bind(this);
 
   }
 
@@ -16,8 +19,8 @@ class TeeTimePicker extends Component {
 
     if (this.props.onChange) {
       this
-      .props
-      .onChange(e.target.value);
+        .props
+        .onChange(e.target.value);
     }
   }
 
@@ -63,22 +66,24 @@ class TeeTimePicker extends Component {
   render() {
 
     const times = this.getTimes();
-    const defaultValue = (this.props.defaultValue)
-      ? this.props.defaultValue
+    const value = (this.props.value)
+      ? this.props.value
       : times[0];
 
     return (
-      <Select 
-        label={this.props.label} 
-        defaultValue={defaultValue}
-        onChange={this.handleSelectionChanged}
+      <FormControl>
+        <InputLabel shrink>
+          {this.props.label}
+        </InputLabel>
+        <Select
+          value={value}
+          onChange={this.handleSelectionChanged}
         >
-        {times.map(item => (
-          <Fragment key={item}>
-            <option value={item}>{item}</option>
-          </Fragment>
-        ))}
-      </Select>
+          {times.map(item => (
+            <MenuItem key={item} value={item}>{item}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     )
   }
 }

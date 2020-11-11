@@ -28,7 +28,6 @@
     "request": "^2.87.0"
   },
   "devDependencies": {
-    "eslint": "^6.6.0",
     "eslint-config-loopback": "^8.0.0",
     "nsp": "^2.1.0"
   },
