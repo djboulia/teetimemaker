@@ -7,19 +7,10 @@ import TableRow from '@material-ui/core/TableRow';
 import ReservationItem from './ReservationItem';
 import Server from '../utils/Server';
 
-class ReservationItems extends Component {
+export default function ReservationItems(props) {
+  const [teetimes, setTeetimes] = React.useState([]);
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      owner: props.owner,
-      teetimes: []
-    }
-
-    this.getTeeTimes();
-  }
-
-  getTeeTimes() {
+  const getTeeTimes = function () {
     Server
       .schedulerList()
       .then(data => {
@@ -32,48 +23,45 @@ class ReservationItems extends Component {
           return (aTime.getTime() - bTime.getTime());
         });
 
-        this.setState({
-          teetimes: data
-        }, () => {
-          //console.log(this.state);
-        })
+        setTeetimes(data);
       })
       .catch(err => console.log(err));
   }
 
-  render() {
-    const owner = this.state.owner;
-    const teetimes = this.state.teetimes;
+  /**
+   * fire change events when player list changes
+   */
+  React.useEffect(() => {
+    console.log("ReservationItems.useEffect: ");
 
-    const reservations = (teetimes.length > 0)
-      ? this
-        .state
-        .teetimes
-        .map((teetime, i) => {
-          return (<ReservationItem key={teetime.id} owner={owner} item={teetime} />)
-        })
-      : <TableRow>
-        <TableCell></TableCell>
-        <TableCell>No upcoming reservations found.</TableCell>
-        <TableCell><a href="/reservations/add">Add a reservation.</a></TableCell>
-      </TableRow>
+    getTeeTimes();
+  }, [])
 
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Time</TableCell>
-            <TableCell>Golfers</TableCell>
-            <TableCell>Course Preference</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {reservations}
-        </TableBody>
-      </Table>
-    )
-  }
+
+  const reservations = (teetimes.length > 0)
+    ? teetimes
+      .map((teetime, i) => {
+        return (<ReservationItem key={teetime.id} owner={props.owner} item={teetime} />)
+      })
+    : <TableRow>
+      <TableCell></TableCell>
+      <TableCell>No upcoming reservations found.</TableCell>
+      <TableCell><a href="/reservations/add">Add a reservation.</a></TableCell>
+    </TableRow>
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell>Date</TableCell>
+          <TableCell>Time</TableCell>
+          <TableCell>Golfers</TableCell>
+          <TableCell>Course Preference</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {reservations}
+      </TableBody>
+    </Table>
+  )
 }
-
-export default ReservationItems;

@@ -20,58 +20,31 @@ let tomorrow = function () {
   return date;
 }
 
-class AddReservation extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      time: "8:00 AM",
-      date: tomorrow(),
-      courses: [],
-      golfers: []
-    }
-
-    this.timeChanged = this
-      .timeChanged
-      .bind(this);
-
-    this.dateChanged = this
-      .dateChanged
-      .bind(this);
-
-    this.coursesChanged = this
-      .coursesChanged
-      .bind(this);
-
-    this.playersChanged = this
-      .playersChanged
-      .bind(this);
-
-  }
+export default function AddReservation(props) {
+  const [time, setTime] = React.useState("8:00 AM");
+  const [date, setDate] = React.useState(tomorrow());
+  const [courses, setCourses] = React.useState([]);
+  const [golfers, setGolfers] = React.useState([]);
 
   /**
    * a reservation is valid only when a time/date has been selected along with
    * at least one course.  it's valid to have zero golfers because the owner
    * of the reservation is always considered part of the tee time.
    */
-  isValidReservation() {
-    return (this.state.time !== undefined && this.state.date !== undefined && this.state.courses.length > 0)
-      ? true
-      : false;
+  const isValidReservation = function () {
+    return (time !== undefined && date !== undefined && courses.length > 0);
   }
 
-  onSubmit(e) {
-    const time = this.state.time;
-    const date = this.state.date;
-    const teetime = time + " " + (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear();
-    const courses = this.state.courses;
-    const golfers = this.state.golfers;
+  const onSubmit = function (e) {
+    const teetime = time + " " + (date.getMonth() + 1) + "/" + date.getDate() +
+      "/" + date.getFullYear();
 
-    console.log("schedulerAdd: " + teetime + ", courses: " + JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
+    console.log("schedulerAdd: " + teetime + ", courses: " +
+      JSON.stringify(courses) + ", golfers: " + JSON.stringify(golfers));
 
     Server.schedulerAdd(teetime, courses, golfers)
       .then(response => {
-        this.props.history.push('/reservations');
+        props.history.push('/reservations');
       })
       .catch(err =>
         console.log(err)
@@ -80,95 +53,109 @@ class AddReservation extends Component {
     e.preventDefault();
   }
 
-  timeChanged(time) {
+  const timeChanged = function (time) {
     console.log("AddReservation - time changed: " + time);
-    this.setState({ time: time });
+    setTime(time);
   }
 
-  dateChanged(date) {
+  const dateChanged = function (date) {
     console.log("AddReservation - date changed: " + date);
-    this.setState({ date: date });
+    setDate(date);
   }
 
-  coursesChanged(courses) {
-    console.log("AddReservation - course selection changed: " + JSON.stringify(courses));
-    this.setState({ courses: courses });
+  const coursesChanged = function (courses) {
+    console.log("AddReservation - course selection changed: " +
+      JSON.stringify(courses));
+
+    setCourses(courses);
   }
 
-  playersChanged(players) {
-    console.log("AddReservation - players changed: " + JSON.stringify(players));
-    this.setState({ golfers: players });
+  const playersChanged = function (players) {
+    console.log("AddReservation - players changed: " +
+      JSON.stringify(players));
+    setGolfers(players);
   }
 
+  return (
+    <Dashboard>
+      <Container maxWidth="md">
+        <br />
+        <Link to="/">
+          <Button
+            variant="contained"
+            color="secondary"
+          >
+            Back
+          </Button>
+        </Link>
+        <br />
+        <Title>New Reservation</Title>
+        <form onSubmit={onSubmit}>
+          <Grid
+            container
+            spacing={2}
+            alignItems='baseline'
+          >
 
-  render() {
-
-    return (
-      <Dashboard>
-        <Container maxWidth="md">
-          <br />
-          <Link to="/">
-            <Button
-              variant="contained"
-              color="secondary">
-              Back
-            </Button>
-          </Link>
-          <br />
-          <Title>New Reservation</Title>
-          <form onSubmit={this
-            .onSubmit
-            .bind(this)}>
             <Grid
-              container
-              spacing={2}
-              alignItems='baseline'
+              item xs={12}
+              sm={3}
             >
-
-              <Grid
-                item xs={12}
-                sm={3}
-              >
-                <TeeDatePicker
-                  label="Date"
-                  defaultValue={this.state.date}
-                  onChange={this.dateChanged} />
-              </Grid>
-
-              <Grid
-                item xs={12}
-                sm={6}
-              >
-                <TeeTimePicker
-                  label="Time"
-                  value={this.state.time}
-                  onChange={this.timeChanged} />
-
-              </Grid>
-
-              <Grid
-                item xs={12}
-              >
-                <CoursePicker onChange={this.coursesChanged}></CoursePicker>
-              </Grid>
-
-              <Grid
-                item xs={12}>
-
-                <PlayerPicker owner={Server.getUser()} onChange={this.playersChanged}></PlayerPicker>
-
-              </Grid>
+              <TeeDatePicker
+                label="Date"
+                defaultValue={date}
+                onChange={dateChanged}
+              />
 
             </Grid>
 
-            <Button variant="contained" color="secondary" type="submit" disabled={!this.isValidReservation()}>Add</Button>
-          </form>
-        </Container>
+            <Grid
+              item xs={12}
+              sm={6}
+            >
 
-      </Dashboard>
+              <TeeTimePicker
+                label="Time"
+                value={time}
+                onChange={timeChanged}
+              />
 
-    )
-  }
+            </Grid>
+
+            <Grid
+              item xs={12}
+            >
+
+              <CoursePicker
+                onChange={coursesChanged}
+              />
+
+            </Grid>
+
+            <Grid
+              item xs={12}>
+
+              <PlayerPicker
+                owner={Server.getUser()}
+                onChange={playersChanged}
+              />
+
+            </Grid>
+
+          </Grid>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            type="submit"
+            disabled={!isValidReservation()}
+          >
+            Add
+          </Button>
+        </form>
+      </Container>
+
+    </Dashboard>
+
+  )
 }
-
-export default AddReservation;

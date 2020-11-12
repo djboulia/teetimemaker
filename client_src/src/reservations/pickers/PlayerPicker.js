@@ -53,78 +53,55 @@ const isInFoursome = function (player, owner, foursome) {
   return found;
 }
 
-class PlayerPicker extends Component {
+const findPlayer = function (id, buddies, searchResults) {
+  console.log("findPlayer: buddies " + JSON.stringify(buddies));
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      owner: props.owner, // owner of this tee time is always the first player
-      players: [],
-      searchResults: [],
-      searching: undefined
-    };
-
-    this.handleSelectionChanged = this
-      .handleSelectionChanged
-      .bind(this);
-
-    this.searchComplete = this
-      .searchComplete
-      .bind(this);
-
-    this.handleSearch = this
-      .handleSearch
-      .bind(this);
-
-    this.getChoices = this
-      .getChoices
-      .bind(this);
+  let player = PlayerUtils.findById(buddies, id);
+  if (player) {
+    return player;
   }
 
-  findPlayer(id) {
-    const buddies = Buddies.get();
-    console.log("findPlayer: buddies " + JSON.stringify(buddies));
-
-    let player = PlayerUtils.findById(buddies, id);
-    if (player) {
-      return player;
-    }
-
-    // if we didn't find them in our buddy list, look in search
-    // results
-    const searchResults = this.state.searchResults;
-
-    player = PlayerUtils.findById(searchResults, id);
-    if (player) {
-      return player;
-    }
-
-    console.log("Warning! id " + id + " not found!");
-    return PlayerUtils.getEmptyPlaceHolder();
+  // if we didn't find them in our buddy list, look in search
+  // results
+  player = PlayerUtils.findById(searchResults, id);
+  if (player) {
+    return player;
   }
+
+  console.log("Warning! id " + id + " not found!");
+  return PlayerUtils.getEmptyPlaceHolder();
+}
+
+export default function PlayerPicker(props) {
+  const [players, setPlayers] = React.useState([]);
+  const [searchResults, setSearchResults] = React.useState([]);
+  const [searching, setSearching] = React.useState(undefined);
+
+  const owner = props.owner;
 
   /**
-   * funnel all state changes through this method so that 
-   * we fire an appropriate onChange event when state changes
-   * 
-   * @param {Object} state new state to set
+   * fire change events when player list changes
    */
-  stateChange(state) {
-    this.setState(state, () => {
-      if (this.props.onChange) {
-        this.props.onChange(this.state.players);
-      }
-    });
-  }
+  React.useEffect(() => {
+    console.log("PlayerPicker.useEffect: ", players);
+    if (props.onChange) {
+      props.onChange(players);
+    }
+  }, [players])
 
-  handleSelectionChanged(e) {
+  const handleSelectionChanged = function (e) {
     console.log("handleSelectionChanged event : " + JSON.stringify(e.target));
     console.log("changed! " + e.target.value);
 
+    const buddies = Buddies.get();
     const prefix = "Player_";
+    const newPlayers = [];
 
-    const owner = this.state.owner;
+    // copy any existing players first
+    for (let i=0; i<players.length; i++) {
+      newPlayers.push(players[i]);
+    }
+
     console.log("self:" + JSON.stringify(owner));
 
     if (e.target.id.startsWith(prefix)) {
@@ -134,39 +111,37 @@ class PlayerPicker extends Component {
         .substring(prefix.length);
 
       if (id >= 0 || id < 3) {
-        console.log(JSON.stringify(this.state.players));
+        console.log(JSON.stringify(newPlayers));
 
-        let player = this.findPlayer(e.target.value);
+        let player = findPlayer(e.target.value, buddies, searchResults);
         console.log("found player: " + JSON.stringify(player));
 
-        let players = this.state.players;
-        if (id >= players.length) {
+        if (id >= newPlayers.length) {
           // add it to the end
           if (!PlayerUtils.isEmpty(player) && !PlayerUtils.isSamePlayer(player, owner)) {
-            players.push(player);
+            newPlayers.push(player);
           }
         } else {
           if (PlayerUtils.isEmpty(player) || PlayerUtils.isSamePlayer(player, owner)) {
             // remove the entry
-            players.splice(id, 1);
+            newPlayers.splice(id, 1);
           } else {
             // replace the entry
-            players[id] = player;
+            newPlayers[id] = player;
           }
         }
 
         // could be a totally new player added to the list.
         // look for that here, add it to our "buddies" list if so
-        const buddies = Buddies.get();
 
         if (!PlayerUtils.isEmpty(player) && !isBuddy(player, owner, buddies)) {
           console.log("adding buddy : " + JSON.stringify(player));
           Buddies.add(player);
         }
 
-        console.log("players: " + JSON.stringify(players));
+        console.log("players: " + JSON.stringify(newPlayers));
 
-        this.stateChange({ players: players });
+        setPlayers(newPlayers);
       }
     }
   }
@@ -176,10 +151,7 @@ class PlayerPicker extends Component {
    * 
    * @param {Array} results list of players resulting from the search
    */
-  filterResults(results) {
-    const players = this.state.players;
-    const owner = this.state.owner;
-
+  const filterResults = function (results) {
     const filteredResults = [];
 
     //results should be an array of current search results.
@@ -197,31 +169,32 @@ class PlayerPicker extends Component {
     return filteredResults;
   }
 
-  searchComplete(results) {
+  const searchComplete = function (results) {
     // set the search results and stop searching
     console.log("search complete: ", results);
-    this.stateChange({ searchResults: results, searching: undefined });
+
+    setSearchResults(results);
+    setSearching(undefined);
   }
 
   /**
-   * called whenever a new search is executed.  we save the state so we can
-   * present prior searches the next time the search dialog is presented
+   * called whenever a new search is executed. 
    * 
-   * @param {Array} results list of players resulting from the search
+   * @param {Array} searchtext names to search for
    */
-  handleSearch(searchtext) {
-    let searching = this.state.searching;
+  const handleSearch = function (searchtext) {
     if (searching) {  // cancel in progress search before doing a new one
       searching.cancel();
     }
 
-    searching = new PlayerSearch(searchtext);
-    searching.doSearch(this.searchComplete);
+    const newSearch = new PlayerSearch(searchtext);
+    newSearch.doSearch(searchComplete);
 
-    this.stateChange({ searchResults: [], searching: searching });
+    setSearchResults([]);
+    setSearching(newSearch);
   }
 
-  getChoices(player) {
+  const getChoices = function (playerChoice) {
     // build a list of drop down choices for this selection
     const buddies = Buddies.get();
     const available = PlayerUtils.getEmptyPlaceHolder();
@@ -229,88 +202,80 @@ class PlayerPicker extends Component {
     const items = [];
     items.push(available);  // first choice is always the available slot
 
-    if (!PlayerUtils.isEmpty(player)) { // if this is a valid player, add it to the list
-      items.push(player);
+    if (!PlayerUtils.isEmpty(playerChoice)) { // if this is a valid player, add it to the list
+      items.push(playerChoice);
     }
 
-    const buddylist = this.filterResults(buddies);
+    const buddylist = filterResults(buddies);
     return items.concat(buddylist);
   }
 
-  render() {
-    console.log("PlayerPicker: render");
-    console.log("players: " + JSON.stringify(this.state.players));
+  console.log("PlayerPicker: render");
+  console.log("players: " + JSON.stringify(players));
 
-    const players = this.state.players;
-    const searchResults = this.filterResults(this.state.searchResults);
-    const searchInProgress = (this.state.searching) ? true : false;
-    const getChoices = this.getChoices;
-    const handleSelectionChanged = this.handleSelectionChanged;
-    const handleSearch = this.handleSearch;
+  const filteredSearchResults = filterResults(searchResults);
+  const searchInProgress = (searching) ? true : false;
 
-    const foursome = [];
-    const available = PlayerUtils.getEmptyPlaceHolder();
+  const foursome = [];
+  const available = PlayerUtils.getEmptyPlaceHolder();
 
-    for (let i = 0; i < players.length; i++) {
-      let player = players[i];
+  for (let i = 0; i < players.length; i++) {
+    let player = players[i];
 
-      foursome.push(player);
-    }
-
-    if (players.length < 3) {
-      let i;
-
-      for (i = 0; i < (3 - players.length); i++) {
-        foursome.push(available);
-      }
-    }
-
-    return (
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell></TableCell>
-            <TableCell>Players</TableCell>
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          <TableRow>
-            <TableCell>1</TableCell>
-            <TableCell><Player value={this.state.owner} self="true"></Player></TableCell>
-          </TableRow>
-
-          {foursome
-            .map(function (player, index) {
-
-              return (
-                <TableRow key={index}>
-                  <TableCell>
-                    {index + 2}
-                  </TableCell>
-
-                  <TableCell>
-                    <Player
-                      id={"Player_" + index}
-                      value={player}
-                      choices={getChoices(player)}
-                      searchResults={searchResults}
-                      searchInProgress={searchInProgress}
-                      onChange={handleSelectionChanged}
-                      onSearch={handleSearch}>
-                    </Player>
-                  </TableCell>
-
-                </TableRow>
-              );
-
-            })}
-
-        </TableBody>
-
-      </Table>
-    )
+    foursome.push(player);
   }
-}
 
-export default PlayerPicker;
+  if (players.length < 3) {
+    let i;
+
+    for (i = 0; i < (3 - players.length); i++) {
+      foursome.push(available);
+    }
+  }
+
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell></TableCell>
+          <TableCell>Players</TableCell>
+        </TableRow>
+      </TableHead>
+
+      <TableBody>
+        <TableRow>
+          <TableCell>1</TableCell>
+          <TableCell><Player value={owner} self="true"></Player></TableCell>
+        </TableRow>
+
+        {foursome
+          .map(function (player, index) {
+
+            return (
+              <TableRow key={index}>
+                <TableCell>
+                  {index + 2}
+                </TableCell>
+
+                <TableCell>
+                  <Player
+                    id={"Player_" + index}
+                    value={player}
+                    choices={getChoices(player)}
+                    searchResults={filteredSearchResults}
+                    searchInProgress={searchInProgress}
+                    onChange={handleSelectionChanged}
+                    onSearch={handleSearch}>
+                  </Player>
+                </TableCell>
+
+              </TableRow>
+            );
+
+          })}
+
+      </TableBody>
+
+    </Table>
+  )
+}

@@ -6,6 +6,58 @@ import Grid from '@material-ui/core/Grid';
 import PlayerSearchModal from './PlayerSearchModal';
 
 /**
+ * Outer formatting for player component
+ * 
+ * @param {Object} props 
+ */
+function PlayerContainer(props) {
+  return (
+    <Grid container direction="row">
+      {props.children}
+    </Grid>
+  );
+}
+
+/**
+ * Item formatting for each element of a player component
+ * 
+ * @param {Object} props 
+ */
+function PlayerContainerItem(props) {
+  return (
+    <Grid
+      item
+      xs={12}
+      sm={3}
+    >
+      {props.children}
+    </Grid>
+  );
+}
+
+/**
+ * The tee time owner is an unchangeable member of the foursome
+ * 
+ * @param {Object} props properties: id, name
+ * @property id: the id of this player component
+ * @property name: the name to display in the player component
+ */
+function Self(props) {
+  return (
+    <PlayerContainer>
+      <PlayerContainerItem>
+
+        <TextField disabled
+          style={{ minWidth: '90%' }}
+          id={props.id}
+          defaultValue={props.name} />
+
+      </PlayerContainerItem>
+    </PlayerContainer>
+  );
+}
+
+/**
  * This component accepts the following optional properties:
  *  id {String} id for this component
  *  self {boolean} if provided, indicates this player is tee time owner and can't be modified
@@ -14,26 +66,46 @@ import PlayerSearchModal from './PlayerSearchModal';
  *  onFilterSearch {Function} to modify the search results before they are displayed
  *  onChangeSearch {Function} fired when a search results in a change
  */
-class Player extends Component {
-  constructor(props) {
+export default function Player(props) {
 
-    super(props);
+  const onChange = function (event) {
+    console.log("Player: select clicked: ", JSON.stringify(event.target));
 
-    this.onChange = this
-      .onChange
-      .bind(this);
+    // fire a change event when the selection changes
+    if (props.onChange) {
+      const e = {
+        target: {
+          id: props.id,
+          value: event.target.value
+        }
+      };
 
-    this.onChangeSearch = this
-      .onChangeSearch
-      .bind(this);
+      props.onChange(e);
+    }
   }
 
-  createSelectItems() {
+  const onChangeSearch = function (player) {
+    console.log("Player.onChangeSearch: ", player);
+
+    // fire a change event when the search changes
+    if (props.onChange) {
+      const e = {
+        target: {
+          id: props.id,
+          value: player.username
+        }
+      };
+
+      props.onChange(e);
+    }
+  }
+
+  const createSelectItems = function () {
     let items = [];
 
-    if (!this.props.self) {
-      for (let i = 0; i < this.props.choices.length; i++) {
-        var choice = this.props.choices[i];
+    if (props.choices) {
+      for (let i = 0; i < props.choices.length; i++) {
+        var choice = props.choices[i];
 
         items.push(
           <MenuItem key={i} value={choice.username}>{choice.name}</MenuItem>
@@ -44,99 +116,45 @@ class Player extends Component {
     return items;
   }
 
-  onChange(event) {
-    console.log("Player: select clicked: ", JSON.stringify(event.target));
+  const player = (props.value) ? props.value : undefined;
+  const username = (player) ? player.username : '';
+  // console.log("Player: searchResults ", props.searchResults);
 
-    // fire a change event when the selection changes
-    if (this.props.onChange) {
-      const e = {
-        target: {
-          id: this.props.id,
-          value: event.target.value
-        }
-      };
+  if (props.self) {
+    console.log("Player: self value: " + JSON.stringify(player))
 
-      this.props.onChange(e);
-    }
+    return <Self id={props.id} name={player.name} />;
   }
 
-  onChangeSearch(player) {
-    console.log("Player.onChangeSearch: ", player);
+  console.log("Player: render value " + JSON.stringify(player));
+  // console.log("choices " + JSON.stringify(props.choices));
 
-    // fire a change event when the search changes
-    if (this.props.onChange) {
-      const e = {
-        target: {
-          id: this.props.id,
-          value: player.username
-        }
-      };
+  // editable input field has select-able options and a search button
+  return (
+    <PlayerContainer>
+      <PlayerContainerItem>
 
-      this.props.onChange(e);
-    }
-  }
+        <Select
+          id={props.id}
+          value={username}
+          style={{ minWidth: '90%' }}
+          onChange={onChange}>
+          {createSelectItems()}
+        </Select>
 
-  render() {
+      </PlayerContainerItem>
 
-    let input = null;
-    const player = (this.props.value) ? this.props.value : undefined;
-    const username = (player) ? player.username : '';
-    // console.log("Player: searchResults ", this.props.searchResults);
+      <PlayerContainerItem>
 
-    if (this.props.self) {
-      console.log("Player: self value: " + JSON.stringify(player))
-      return (
-        <Grid container direction="row">
-          <Grid
-            item
-            xs={12}
-            sm={3}
-          >
-            <TextField disabled
-              style={{ minWidth: '90%' }}
-              id={this.props.id}
-              defaultValue={player.name} />
-          </Grid>
-        </Grid>
-      )
+        <PlayerSearchModal
+          searchResults={props.searchResults}
+          searchInProgress={props.searchInProgress}
+          onClose={onChangeSearch}
+          onSearch={props.onSearch}>
+        </PlayerSearchModal>
 
-    } else {
-      console.log("Player: render value " + JSON.stringify(player));
-      // console.log("choices " + JSON.stringify(this.props.choices));
+      </PlayerContainerItem>
+    </PlayerContainer>
+  );
 
-      // editable input field has select-able options and a search button
-      return (
-        <Grid container direction="row">
-          <Grid
-            item
-            xs={12}
-            sm={3}
-          >
-            <Select
-              id={this.props.id}
-              value={username}
-              style={{ minWidth: '90%' }}
-              onChange={this.onChange}>
-              {this.createSelectItems()}
-            </Select>
-          </Grid>
-
-          <Grid
-            item
-            xs={12}
-            sm={3}
-          >
-            <PlayerSearchModal
-              searchResults={this.props.searchResults}
-              searchInProgress={this.props.searchInProgress}
-              onClose={this.onChangeSearch}
-              onSearch={this.props.onSearch}>
-            </PlayerSearchModal>
-          </Grid>
-        </Grid>
-      );
-    }
-  }
 }
-
-export default Player;

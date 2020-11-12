@@ -1,66 +1,46 @@
-import React, { Component } from 'react';
+import React from 'react';
+import { Redirect } from 'react-router-dom'
 import { Button, TextField } from '@material-ui/core';
 import Container from '@material-ui/core/Container';
-import { Redirect } from 'react-router-dom'
+import Alert from '@material-ui/lab/Alert';
 import Dashboard from './Dashboard';
 import Title from './Title';
 import Server from './utils/Server';
 
-let statusMsg = (msg) => {
-  const result = <p className="msg">{msg}</p>
-  return result;
+const statusMsg = (msg) => {
+  <Alert severity="info">{msg}</Alert>
 }
 
-let errorMsg = (msg) => {
-  const result = <p className="msg error">{msg}</p>
-  return result;
+const errorMsg = (msg) => {
+  return <Alert severity="error">{msg}</Alert>
 }
 
-class Login extends Component {
+export default function Login(props) {
+  const [redirectToReferrer, setRedirectToReferrer] = React.useState(false);
+  const [msg, setMsg] = React.useState(statusMsg("Please log in."));
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
-  constructor() {
-    super();
-
-    this.state = {
-      redirectToReferrer: false,
-      msg: statusMsg("Please log in.")
-    }
-
-    this.handleUserNameChange = this
-      .handleUserNameChange
-      .bind(this);
-
-    this.handlePasswordChange = this
-      .handlePasswordChange
-      .bind(this);
-
-    this.handleEnterKey = this
-      .handleEnterKey
-      .bind(this);
-
-  }
-
-  login() {
+  const login = function () {
     Server
-      .login(this.state.username, this.state.password)
+      .login(username, password)
       .then((result) => {
         console.log("login result " + result.status);
 
-        this.setState({
-          redirectToReferrer: result.status,
-          msg: (result.status)
-            ? statusMsg(result.msg)
-            : errorMsg(result.msg)
-        });
+        setMsg((result.status) ?
+          statusMsg(result.msg) :
+          errorMsg(result.msg));
+
+        setRedirectToReferrer(result.status);
       })
   }
 
-  handleUserNameChange(e) {
-    this.setState({ username: e.target.value });
+  const handleUserNameChange = function (e) {
+    setUsername(e.target.value);
   }
 
-  handlePasswordChange(e) {
-    this.setState({ password: e.target.value });
+  const handlePasswordChange = function (e) {
+    setPassword(e.target.value);
   }
 
   /**
@@ -69,64 +49,59 @@ class Login extends Component {
    * 
    * @param {Object} e key event
    */
-  handleEnterKey(e) {
+  const handleEnterKey = function (e) {
     if (e.key === "Enter") {
-      this.login();
+      login();
     }
   }
 
-  render() {
-    const { from } = this.props.location.state || {
-      from: {
-        pathname: '/'
-      }
+  const { from } = props.location.state || {
+    from: {
+      pathname: '/'
     }
-    const redirectToReferrer = this.state.redirectToReferrer;
-
-    if (redirectToReferrer === true) {
-      console.log("Redirecting to : " + from.pathname);
-      return <Redirect to={from} />
-    }
-
-    const loginMsg = this.state.msg;
-
-    const self = this;
-
-    return (
-      <Dashboard>
-        <Container maxWidth="xs">
-          <Title>Login</Title>
-
-          {loginMsg}
-
-          <TextField
-            placeholder="PWCC User Name"
-            margin="normal"
-            fullWidth
-            label="User Name"
-            onChange={self.handleUserNameChange} />
-
-          <TextField
-            type="password"
-            label="password"
-            margin="normal"
-            fullWidth
-            onChange={self.handlePasswordChange}
-            onKeyPress={self.handleEnterKey} />
-
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              self.login();
-            }}>Log In</Button>
-
-        </Container>
-
-      </Dashboard>
-    )
   }
+
+  if (redirectToReferrer === true) {
+    console.log("Redirecting to : " + from.pathname);
+    return <Redirect to={from} />
+  }
+
+  const loginDisabled = username === "" || password === "";
+
+  return (
+    <Dashboard>
+      <Container maxWidth="xs">
+        <Title>Login</Title>
+
+        {msg}
+
+        <TextField
+          placeholder="PWCC User Name"
+          margin="normal"
+          fullWidth
+          label="User Name"
+          onChange={handleUserNameChange} />
+
+        <TextField
+          type="password"
+          label="password"
+          margin="normal"
+          fullWidth
+          onChange={handlePasswordChange}
+          onKeyPress={handleEnterKey} />
+
+        <Button
+          fullWidth
+          variant="contained"
+          disabled={loginDisabled}
+          color="primary"
+          onClick={login}
+        >
+          Log In
+        </Button>
+
+      </Container>
+
+    </Dashboard>
+  )
 }
-
-export default Login;

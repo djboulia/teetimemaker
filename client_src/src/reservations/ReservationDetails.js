@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Dashboard from '../Dashboard';
 import Title from '../Title';
 import Container from '@material-ui/core/Container';
+import { LinearProgress } from '@material-ui/core';
 import { Button, List, ListItem, ListItemText, ListItemIcon, Divider } from '@material-ui/core';
 import Typography from '@material-ui/core/Typography';
 import Server from '../utils/Server';
@@ -12,58 +13,54 @@ import PeopleIcon from '@material-ui/icons/People';
 import GolfCourseIcon from '@material-ui/icons/GolfCourse';
 import AlarmIcon from '@material-ui/icons/Alarm';
 
-class ReservationDetails extends Component {
-  constructor(props) {
-    super(props);
+export default function ReservationDetails(props) {
+  const [details, setDetails] = React.useState(undefined);
 
-    this.state = {
-      details: undefined
-    }
-
-    this.getReservation();
-  }
-
-  getReservation() {
-    let meetupId = this.props.match.params.id;
+  const getReservation = function () {
+    let meetupId = props.match.params.id;
 
     Server
       .schedulerGet(meetupId)
       .then((data) => {
-        this.setState({ details: data });
+        setDetails(data);
       })
       .catch(err => console.log(err));
 
   }
 
-  onDelete() {
-    let meetupId = this.state.details.id;
+  /**
+   * fire change events when player list changes
+   */
+  React.useEffect(() => {
+    console.log("ReservationDetails.useEffect: ");
+
+    getReservation();
+  }, [])
+
+  const onDelete = function () {
+    const meetupId = details.id;
 
     Server
       .schedulerDelete(meetupId)
       .then((data) => {
-        this
-          .props
-          .history
-          .push('/');
+        props.history.push('/');
       })
       .catch(err => console.log(err));
 
   }
 
-  render() {
-
     const owner = Server.getUser().name;
 
-    if (!this.state.details) {
-      return <div>Loading...</div>
+    if (!details) {
+      return <LinearProgress></LinearProgress>
     }
 
-    console.log("details " + JSON.stringify(this.state.details));
+    console.log("details " + JSON.stringify(details));
 
-    const teeTime = Formatter.teeTime(this.state.details.teetime);
-    const reserveTime = Formatter.teeTime(this.state.details.scheduled);
-    const courses = Formatter.courses(this.state.details.courses);
-    const golfers = Formatter.golfers(owner, this.state.details.golfers);
+    const teeTime = Formatter.teeTime(details.teetime);
+    const reserveTime = Formatter.teeTime(details.scheduled);
+    const courses = Formatter.courses(details.courses);
+    const golfers = Formatter.golfers(owner, details.golfers);
 
     return (
       <Dashboard>
@@ -99,7 +96,7 @@ class ReservationDetails extends Component {
                 }
               />
             </ListItem>
-            
+
             <Divider variant="inset" component="li" />
 
             <ListItem>
@@ -171,18 +168,13 @@ class ReservationDetails extends Component {
 
           <Button
             variant="contained"
-            style={{float:'right', backgroundColor:'red', color:'white'}}
-            onClick={this
-              .onDelete
-              .bind(this)}
+            style={{ float: 'right', backgroundColor: 'red', color: 'white' }}
+            onClick={onDelete}
           >
             Delete
-            </Button>
+          </Button>
 
         </Container>
       </Dashboard>
     )
   }
-}
-
-export default ReservationDetails;

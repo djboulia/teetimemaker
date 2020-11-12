@@ -25,254 +25,233 @@ const courseShow = {
   transition: 'height 250ms 0ms, opacity 250ms 250ms'
 }
 
+/**
+* return a human readable version of the sort order
+*/
+const order = function (selected, index) {
+  let val = "";
 
-
-class CoursePicker extends Component {
-
-  constructor(props) {
-    super(props);
-
-    this.handleChange = this
-      .handleChange
-      .bind(this);
-
-    this.transitionTime = 250; // ms
-
-    this.state = {
-      courses: [
-        {
-          key: "fairways",
-          name: "Fairways",
-          selected: false,
-          added: false,
-          removed: false,
-          handleChange: this.handleChange
-        }, {
-          key: "highlands",
-          name: "Highlands",
-          selected: false,
-          added: false,
-          removed: false,
-          handleChange: this.handleChange
-        }, {
-          key: "meadows",
-          name: "Meadows",
-          selected: false,
-          added: false,
-          removed: false,
-          handleChange: this.handleChange
-        }
-      ]
-    };
-
+  if (selected) {
+    switch (index) {
+      case 0:
+        val = "1st";
+        break;
+      case 1:
+        val = "2nd";
+        break;
+      case 2:
+        val = "3rd";
+        break;
+      default:
+        val = "";
+    }
   }
 
-  handleChange(event) {
+  return val;
+}
+
+/**
+ * return an array of selected course names
+ */
+const selectedCourses = function (courses) {
+  const selected = [];
+
+  for (let i = 0; i < courses.length; i++) {
+    const course = courses[i];
+    if (course.selected === true) {
+      selected.push(course.name);
+    }
+  }
+
+  return selected;
+}
+
+
+export default function CoursePicker(props) {
+  const [courseChange, setCourseChange] = React.useState(false);
+  const [courses, setCourses] = React.useState([
+    {
+      key: "fairways",
+      name: "Fairways",
+      selected: false,
+      added: false,
+      removed: false,
+    }, {
+      key: "highlands",
+      name: "Highlands",
+      selected: false,
+      added: false,
+      removed: false,
+    }, {
+      key: "meadows",
+      name: "Meadows",
+      selected: false,
+      added: false,
+      removed: false,
+    }
+  ]);
+
+  const transitionTime = 250; // ms
+
+  const handleChange = function (event) {
 
     // initially mark the element to be removed from the list
-    let value = event.target.value;
-    let courses = this.state.courses;
+    const value = event.target.value;
+    const newCourses = [];
 
     console.log("changed! " + value);
-    let i = 0;
 
-    for (i = 0; i < courses.length; i++) {
-      let course = courses[i];
+    // copy course data
+    for (let i = 0; i < courses.length; i++) {
+      const course = courses[i];
 
       if (course.key === value) {
         course.selected = !course.selected;
         course.removed = true;
         course.added = false;
-
-        break;
       }
+
+      newCourses.push(course);
     }
 
-    setTimeout(() => this.setState(() => {
+    setCourses(newCourses);
+
+    setTimeout(() => {
       console.log("removing item " + value);
-      setTimeout(() => this.showChange(value), this.transitionTime)
-      return { courses: courses };
-    }), 250);
+
+      setTimeout(
+        () => showChange(value), transitionTime
+      )
+    }, transitionTime);
 
   }
 
-  showChange(value) {
+  const showChange = function (value) {
     console.log("showing item " + value);
 
-    let courses = this.state.courses;
-    let i = 0;
+    const newCourses = [];
+    for (let i = 0; i < courses.length; i++) {
+      newCourses.push(courses[i]);
+    }
 
-    for (i = 0; i < courses.length; i++) {
-      let course = courses[i];
+    for (let i = 0; i < newCourses.length; i++) {
+      const course = newCourses[i];
 
       if (course.key === value) {
         course.added = true;
         course.removed = false;
 
         // de-selected entries sink to the bottom
-        courses.splice(i, 1);
+        newCourses.splice(i, 1);
 
         let j;
 
-        for (j = 0; j < courses.length; j++) {
-          let course2 = courses[j];
+        for (j = 0; j < newCourses.length; j++) {
+          const course2 = newCourses[j];
 
           if (!course2.selected) {
             break;
           }
         }
 
-        courses.splice(j, 0, course);
+        newCourses.splice(j, 0, course);
 
         break;
       }
     }
 
-    this.setState(() => {
-      setTimeout(() => this.completeChange(value), this.transitionTime)
-      return { courses: courses };
-    });
+    setCourses(newCourses);
 
+    setTimeout(() => completeChange(value), transitionTime)
   }
 
-  completeChange(value) {
+  const completeChange = function (value) {
     console.log("showing item " + value);
 
-    let courses = this.state.courses;
-    let i = 0;
+    const newCourses = [];
+    for (let i = 0; i < courses.length; i++) {
+      newCourses.push(courses[i]);
+    }
 
-    for (i = 0; i < courses.length; i++) {
-      let course = courses[i];
+    for (let i = 0; i < newCourses.length; i++) {
+      const course = newCourses[i];
 
       if (course.key === value) {
         course.added = false;
         course.removed = false;
 
         // de-selected entries sink to the bottom
-        courses.splice(i, 1);
+        newCourses.splice(i, 1);
 
         let j;
 
-        for (j = 0; j < courses.length; j++) {
-          let course2 = courses[j];
+        for (j = 0; j < newCourses.length; j++) {
+          const course2 = newCourses[j];
 
           if (!course2.selected) {
             break;
           }
         }
 
-        courses.splice(j, 0, course);
+        newCourses.splice(j, 0, course);
 
         break;
       }
     }
 
-    this.stateChange({ courses: courses });
+    setCourseChange(!courseChange); // toggle course change to trigger a change event
+    setCourses(newCourses);
   }
 
   /**
-   * funnel all state changes through this method so that 
-   * we fire an appropriate onChange event when state changes
-   * 
-   * @param {*} state new state to set
+   * fire change events when course list changes
    */
-  stateChange(state) {
-    this.setState(state, () => {
-      if (this.props.onChange) {
-        this.props.onChange(this.selectedCourses());
-      }
-    });
-  }
-
-  /**
-   * return an array of selected course names
-   */
-  selectedCourses() {
-    const courses = this.state.courses;
-    const selected = [];
-
-    for (let i = 0; i < courses.length; i++) {
-      const course = courses[i];
-      if (course.selected === true) {
-        selected.push(course.name);
-      }
+  React.useEffect(() => {
+    console.log("CoursePicker.useEffect: ", courses);
+    if (props.onChange) {
+      props.onChange(selectedCourses(courses));
     }
+  }, [courseChange])
 
-    return selected;
-  }
+  console.log("CoursePicker: render");
 
-  /**
-   * return a human readable version of the sort order
-   */
-  order(selected, index) {
-    let val = "";
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Include</TableCell>
+          <TableCell>Course</TableCell>
+          <TableCell>Preference</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {courses
+          .map(function (course, index) {
+            let rowClass = course.removed ? courseHide : course.added ? courseShow : courseVisible;
 
-    if (selected) {
-      switch (index) {
-        case 0:
-          val = "1st";
-          break;
-        case 1:
-          val = "2nd";
-          break;
-        case 2:
-          val = "3rd";
-          break;
-        default:
-          val = "";
-      }
-    }
+            return <TableRow key={course.key} style={rowClass}>
+              <TableCell>
+                <Checkbox
+                  name='group1'
+                  onChange={handleChange}
+                  value={course.key}
+                  color="secondary"
+                  checked={course.selected}
+                  label=' ' />
+              </TableCell>
 
-    return val;
-  }
+              <TableCell>
+                {course.name}
+              </TableCell>
 
-  render() {
-    console.log("CoursePicker: render");
+              <TableCell>
+                {order(course.selected, index)}
+              </TableCell>
+            </TableRow>
 
-    let courses = this.state.courses;
-    let order = this.order;
+          })}
+      </TableBody>
+    </Table>
 
-    return (
-
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Include</TableCell>
-            <TableCell>Course</TableCell>
-            <TableCell>Preference</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {courses
-            .map(function (course, index) {
-              let rowClass = course.removed ? courseHide : course.added ? courseShow : courseVisible;
-
-              return <TableRow key={course.key} style={rowClass}>
-                <TableCell>
-                  <Checkbox
-                    name='group1'
-                    onChange={course.handleChange}
-                    value={course.key}
-                    color="secondary"
-                    checked={course.selected}
-                    label=' ' />
-                </TableCell>
-
-                <TableCell>
-                  {course.name}
-                </TableCell>
-
-                <TableCell>
-                  {order(course.selected, index)}
-                </TableCell>
-              </TableRow>
-
-            })}
-        </TableBody>
-      </Table>
-
-    )
-  }
+  );
 }
-
-export default CoursePicker;

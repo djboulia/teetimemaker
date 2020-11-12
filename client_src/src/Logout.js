@@ -1,15 +1,16 @@
-import React, {Component} from 'react';
-import {Redirect} from 'react-router-dom'
+import React, { Component } from 'react';
+import { Redirect } from 'react-router-dom'
 import Server from './utils/Server';
 
-class Logout extends Component {
-
-  constructor() {
-    super();
+export default function Logout(props) {
+  /**
+   * fire change event once
+   */
+  React.useEffect(() => {
+    console.log("Logout.useEffect: ");
 
     if (Server.isLoggedIn()) {
-      Server
-        .logout()
+      Server.logout()
         .then(() => {
           console.log("Logged out.");
         })
@@ -17,16 +18,12 @@ class Logout extends Component {
           console.log("Error logging out: " + e);
         })
     }
-  }
+  }, [])
 
-  render() {
-    // the constructor attempts the logout, so we just redirect back
-    // to the main login page in the render function
-    const loginPage = "/login";
+  // the constructor attempts the logout, so we just redirect back
+  // to the main login page in the render function
+  const loginPage = "/login";
 
-    console.log("Redirecting to : " + loginPage);
-    return <Redirect to={loginPage}/>
-  }
+  console.log("Redirecting to : " + loginPage);
+  return <Redirect to={loginPage} />
 }
-
-export default Logout;
