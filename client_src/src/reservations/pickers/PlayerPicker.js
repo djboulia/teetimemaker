@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -72,12 +72,59 @@ const findPlayer = function (id, buddies, searchResults) {
   return PlayerUtils.getEmptyPlaceHolder();
 }
 
+const buildFoursome = function (players) {
+  const foursome = [];
+  const available = PlayerUtils.getEmptyPlaceHolder();
+
+  for (let i = 0; i < players.length; i++) {
+    let player = players[i];
+
+    foursome.push(player);
+  }
+
+  if (players.length < 3) {
+    let i;
+
+    for (i = 0; i < (3 - players.length); i++) {
+      foursome.push(available);
+    }
+  }
+
+  return foursome;
+}
+
 export default function PlayerPicker(props) {
   const [players, setPlayers] = React.useState([]);
   const [searchResults, setSearchResults] = React.useState([]);
   const [searching, setSearching] = React.useState(undefined);
 
+  /**
+   * look for players already in our foursome and remove them from the search results
+   * 
+   * @param {Array} results list of players resulting from the search
+   */
+  const filterResults = function (results) {
+    const filteredResults = [];
+
+    //results should be an array of current search results.
+    for (let i = 0; i < results.length; i++) {
+      const player = results[i];
+
+      if (!isInFoursome(player, owner, players)) {
+        filteredResults.push(player);
+      } else {
+        console.log("Player " + player.name + " is already in foursome...removing from search list.");
+      }
+    }
+
+    console.log("filterResults returning: " + JSON.stringify(filteredResults));
+    return filteredResults;
+  }
+
   const owner = props.owner;
+  const filteredSearchResults = filterResults(searchResults);
+  const searchInProgress = (searching) ? true : false;
+  const foursome = buildFoursome(players);
 
   /**
    * fire change events when player list changes
@@ -98,7 +145,7 @@ export default function PlayerPicker(props) {
     const newPlayers = [];
 
     // copy any existing players first
-    for (let i=0; i<players.length; i++) {
+    for (let i = 0; i < players.length; i++) {
       newPlayers.push(players[i]);
     }
 
@@ -146,29 +193,6 @@ export default function PlayerPicker(props) {
     }
   }
 
-  /**
-   * look for players already in our foursome and remove them from the search results
-   * 
-   * @param {Array} results list of players resulting from the search
-   */
-  const filterResults = function (results) {
-    const filteredResults = [];
-
-    //results should be an array of current search results.
-    for (let i = 0; i < results.length; i++) {
-      const player = results[i];
-
-      if (!isInFoursome(player, owner, players)) {
-        filteredResults.push(player);
-      } else {
-        console.log("Player " + player.name + " is already in foursome...removing from search list.");
-      }
-    }
-
-    console.log("filterResults returning: " + JSON.stringify(filteredResults));
-    return filteredResults;
-  }
-
   const searchComplete = function (results) {
     // set the search results and stop searching
     console.log("search complete: ", results);
@@ -212,26 +236,6 @@ export default function PlayerPicker(props) {
 
   console.log("PlayerPicker: render");
   console.log("players: " + JSON.stringify(players));
-
-  const filteredSearchResults = filterResults(searchResults);
-  const searchInProgress = (searching) ? true : false;
-
-  const foursome = [];
-  const available = PlayerUtils.getEmptyPlaceHolder();
-
-  for (let i = 0; i < players.length; i++) {
-    let player = players[i];
-
-    foursome.push(player);
-  }
-
-  if (players.length < 3) {
-    let i;
-
-    for (i = 0; i < (3 - players.length); i++) {
-      foursome.push(available);
-    }
-  }
 
   return (
     <Table>

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -10,9 +10,13 @@ import Server from '../utils/Server';
 export default function ReservationItems(props) {
   const [teetimes, setTeetimes] = React.useState([]);
 
-  const getTeeTimes = function () {
-    Server
-      .schedulerList()
+  /**
+   * get tee times for this user
+   */
+  React.useEffect(() => {
+    console.log("ReservationItems.useEffect: ");
+
+    Server.schedulerList()
       .then(data => {
 
         // sort closest upcoming dates first
@@ -26,15 +30,6 @@ export default function ReservationItems(props) {
         setTeetimes(data);
       })
       .catch(err => console.log(err));
-  }
-
-  /**
-   * fire change events when player list changes
-   */
-  React.useEffect(() => {
-    console.log("ReservationItems.useEffect: ");
-
-    getTeeTimes();
   }, [])
 
 
@@ -54,11 +49,15 @@ export default function ReservationItems(props) {
       <TableHead>
         <TableRow>
           <TableCell>Date</TableCell>
+
           <TableCell>Time</TableCell>
+
           <TableCell>Golfers</TableCell>
+
           <TableCell>Course Preference</TableCell>
         </TableRow>
       </TableHead>
+
       <TableBody>
         {reservations}
       </TableBody>

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Container from '@material-ui/core/Container';
 import { Redirect } from 'react-router-dom'
 import Dashboard from './Dashboard';
@@ -23,12 +23,13 @@ export default function Home(props) {
   return (
     <Dashboard>
       <Container maxWidth="sm">
+        
         <Title>Tee Time Maker</Title>
 
         <p>
           This app will allow you to make reservations for future tee times. When the tee
           sheet opens, the reservation will be booked on your behalf.
-          </p>
+        </p>
 
         <p>Please <a href="/login">Log in</a> to continue</p>
 

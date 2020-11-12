@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Dashboard from '../Dashboard';
 import Title from '../Title';
@@ -16,17 +16,7 @@ import AlarmIcon from '@material-ui/icons/Alarm';
 export default function ReservationDetails(props) {
   const [details, setDetails] = React.useState(undefined);
 
-  const getReservation = function () {
-    let meetupId = props.match.params.id;
-
-    Server
-      .schedulerGet(meetupId)
-      .then((data) => {
-        setDetails(data);
-      })
-      .catch(err => console.log(err));
-
-  }
+  const owner = Server.getUser().name;
 
   /**
    * fire change events when player list changes
@@ -34,147 +24,150 @@ export default function ReservationDetails(props) {
   React.useEffect(() => {
     console.log("ReservationDetails.useEffect: ");
 
-    getReservation();
+    const meetupId = props.match.params.id;
+
+    Server
+      .schedulerGet(meetupId).then((data) => {
+        setDetails(data);
+      })
+      .catch(err => console.log(err));
   }, [])
 
   const onDelete = function () {
     const meetupId = details.id;
 
     Server
-      .schedulerDelete(meetupId)
-      .then((data) => {
+      .schedulerDelete(meetupId).then((data) => {
         props.history.push('/');
       })
       .catch(err => console.log(err));
-
   }
 
-    const owner = Server.getUser().name;
+  // display a progress bar while we're loading results
+  if (!details) {
+    return <LinearProgress></LinearProgress>
+  }
 
-    if (!details) {
-      return <LinearProgress></LinearProgress>
-    }
+  console.log("details " + JSON.stringify(details));
 
-    console.log("details " + JSON.stringify(details));
+  const teeTime = Formatter.teeTime(details.teetime);
+  const reserveTime = Formatter.teeTime(details.scheduled);
+  const courses = Formatter.courses(details.courses);
+  const golfers = Formatter.golfers(owner, details.golfers);
 
-    const teeTime = Formatter.teeTime(details.teetime);
-    const reserveTime = Formatter.teeTime(details.scheduled);
-    const courses = Formatter.courses(details.courses);
-    const golfers = Formatter.golfers(owner, details.golfers);
-
-    return (
-      <Dashboard>
-        <Container maxWidth="md">
-          <br />
-          <Link to="/">
-            <Button
-              variant="contained"
-              color="secondary">
-              Back
-            </Button>
-          </Link>
-          <br />
-          <Title>Scheduled Reservation for {owner}</Title>
-
-          <List>
-            <ListItem>
-              <ListItemIcon color="secondary">
-                <EventIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Tee Time"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="textPrimary"
-                    >
-                      {teeTime.time} on {teeTime.date}
-                    </Typography>
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-
-            <Divider variant="inset" component="li" />
-
-            <ListItem>
-              <ListItemIcon>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Golfers"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="textPrimary"
-                    >
-                      {golfers}
-                    </Typography>
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-
-            <Divider variant="inset" component="li" />
-
-            <ListItem>
-              <ListItemIcon>
-                <GolfCourseIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Preferred Courses"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="textPrimary"
-                    >
-                      {courses}
-                    </Typography>
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-
-            <Divider variant="inset" component="li" />
-
-            <ListItem>
-              <ListItemIcon>
-                <AlarmIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Tee sheet opens"
-                secondary={
-                  <React.Fragment>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      color="textPrimary"
-                    >
-                      {reserveTime.date}
-                    </Typography>
-                  </React.Fragment>
-                }
-              />
-            </ListItem>
-
-          </List>
-
-
+  return (
+    <Dashboard>
+      <Container maxWidth="md">
+        <br />
+        <Link to="/">
           <Button
             variant="contained"
-            style={{ float: 'right', backgroundColor: 'red', color: 'white' }}
-            onClick={onDelete}
-          >
-            Delete
+            color="secondary">
+            Back
+            </Button>
+        </Link>
+        <br />
+        <Title>Scheduled Reservation for {owner}</Title>
+
+        <List>
+          <ListItem>
+            <ListItemIcon color="secondary">
+              <EventIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Tee Time"
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="textPrimary"
+                  >
+                    {teeTime.time} on {teeTime.date}
+                  </Typography>
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+
+          <Divider variant="inset" component="li" />
+
+          <ListItem>
+            <ListItemIcon>
+              <PeopleIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Golfers"
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="textPrimary"
+                  >
+                    {golfers}
+                  </Typography>
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+
+          <Divider variant="inset" component="li" />
+
+          <ListItem>
+            <ListItemIcon>
+              <GolfCourseIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Preferred Courses"
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="textPrimary"
+                  >
+                    {courses}
+                  </Typography>
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+
+          <Divider variant="inset" component="li" />
+
+          <ListItem>
+            <ListItemIcon>
+              <AlarmIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Tee sheet opens"
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="textPrimary"
+                  >
+                    {reserveTime.date}
+                  </Typography>
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+
+        </List>
+
+
+        <Button
+          variant="contained"
+          style={{ float: 'right', backgroundColor: 'red', color: 'white' }}
+          onClick={onDelete}
+        >
+          Delete
           </Button>
 
-        </Container>
-      </Dashboard>
-    )
-  }
+      </Container>
+    </Dashboard>
+  )
+}

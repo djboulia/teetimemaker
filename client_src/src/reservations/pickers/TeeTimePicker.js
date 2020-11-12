@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from 'react';
+import React from 'react';
 import FormControl from '@material-ui/core/FormControl';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
@@ -47,6 +47,8 @@ function getTimes() {
 }
 
 export default function TeeTimePicker(props) {
+  const times = getTimes();
+  const value = (props.value) ? props.value : times[0];
 
   const handleSelectionChanged = function (e) {
     console.log("TeeTimePicker: selection changed: " + e.target.value);
@@ -55,9 +57,6 @@ export default function TeeTimePicker(props) {
       props.onChange(e.target.value);
     }
   }
-
-  const times = getTimes();
-  const value = (props.value) ? props.value : times[0];
 
   return (
     <FormControl>

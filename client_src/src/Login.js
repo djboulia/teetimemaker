@@ -21,6 +21,8 @@ export default function Login(props) {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
 
+  const loginDisabled = username === "" || password === "";
+
   const login = function () {
     Server
       .login(username, password)
@@ -65,8 +67,6 @@ export default function Login(props) {
     console.log("Redirecting to : " + from.pathname);
     return <Redirect to={from} />
   }
-
-  const loginDisabled = username === "" || password === "";
 
   return (
     <Dashboard>

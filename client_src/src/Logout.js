@@ -1,8 +1,13 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { Redirect } from 'react-router-dom'
 import Server from './utils/Server';
 
 export default function Logout(props) {
+
+  // the constructor attempts the logout, so we just redirect back
+  // to the main login page in the render function
+  const loginPage = "/login";
+
   /**
    * fire change event once
    */
@@ -19,10 +24,6 @@ export default function Logout(props) {
         })
     }
   }, [])
-
-  // the constructor attempts the logout, so we just redirect back
-  // to the main login page in the render function
-  const loginPage = "/login";
 
   console.log("Redirecting to : " + loginPage);
   return <Redirect to={loginPage} />

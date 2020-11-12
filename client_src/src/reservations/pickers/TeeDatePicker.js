@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { DatePicker } from '@material-ui/pickers';
 
 /**
@@ -7,6 +7,7 @@ import { DatePicker } from '@material-ui/pickers';
  *  onChange - function - if supplied, will be called when a new date is selected
  */
 export default function TeeDatePicker(props) {
+  const theDate = (props.defaultValue) ? props.defaultValue : new Date();
 
   const handleSelectionChanged = function (e) {
     console.log("TeeDatePicker: date changed: " + e);
@@ -16,8 +17,6 @@ export default function TeeDatePicker(props) {
       props.onChange(new Date(e));
     }
   }
-
-  const theDate = (props.defaultValue) ? props.defaultValue : new Date();
 
   return (
     <DatePicker

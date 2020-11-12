@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Container from '@material-ui/core/Container';
 import { Button } from '@material-ui/core';
@@ -11,7 +11,7 @@ import CoursePicker from './pickers/CoursePicker';
 import PlayerPicker from './pickers/PlayerPicker';
 import Server from '../utils/Server';
 
-let tomorrow = function () {
+const tomorrow = function () {
   const date = new Date()
 
   // Add a day

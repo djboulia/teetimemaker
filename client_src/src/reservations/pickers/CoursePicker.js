@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import Checkbox from '@material-ui/core/Checkbox';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -6,23 +6,25 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
-const courseVisible = {
-  opacity: '1.0',
-  boxSizing: 'border-box',
-  transition: 'height 250ms 0ms, opacity 250ms 250ms'
-};
+const styles = {
+  courseVisible: {
+    opacity: '1.0',
+    boxSizing: 'border-box',
+    transition: 'height 250ms 0ms, opacity 250ms 250ms'
+  },
 
-const courseHide = {
-  border: 'solid 1px #2bbbad',
-  transition: 'height 250ms 250ms, opacity 250ms 0ms',
-  opacity: '0.0',
-  height: '0px'
-}
+  courseHide: {
+    border: 'solid 1px #2bbbad',
+    transition: 'height 250ms 250ms, opacity 250ms 0ms',
+    opacity: '0.0',
+    height: '0px'
+  },
 
-const courseShow = {
-  border: 'solid 1px #2bbbad',
-  boxSizing: 'border-box',
-  transition: 'height 250ms 0ms, opacity 250ms 250ms'
+  courseShow: {
+    border: 'solid 1px #2bbbad',
+    boxSizing: 'border-box',
+    transition: 'height 250ms 0ms, opacity 250ms 250ms'
+  }
 }
 
 /**
@@ -227,7 +229,7 @@ export default function CoursePicker(props) {
       <TableBody>
         {courses
           .map(function (course, index) {
-            let rowClass = course.removed ? courseHide : course.added ? courseShow : courseVisible;
+            let rowClass = course.removed ? styles.courseHide : course.added ? styles.courseShow : styles.courseVisible;
 
             return <TableRow key={course.key} style={rowClass}>
               <TableCell>

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import TextField from '@material-ui/core/TextField';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -67,6 +67,9 @@ function Self(props) {
  *  onChangeSearch {Function} fired when a search results in a change
  */
 export default function Player(props) {
+  const player = (props.value) ? props.value : undefined;
+  const username = (player) ? player.username : '';
+  // console.log("Player: searchResults ", props.searchResults);
 
   const onChange = function (event) {
     console.log("Player: select clicked: ", JSON.stringify(event.target));
@@ -115,10 +118,6 @@ export default function Player(props) {
 
     return items;
   }
-
-  const player = (props.value) ? props.value : undefined;
-  const username = (player) ? player.username : '';
-  // console.log("Player: searchResults ", props.searchResults);
 
   if (props.self) {
     console.log("Player: self value: " + JSON.stringify(player))
