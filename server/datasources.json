@@ -5,10 +5,13 @@
   },
   "teetime": {
     "database": "teetime",
-    "username": "b506e5b5-76a6-41b4-92cf-2ed695926e99-bluemix",
-    "password": "a2baa1ce750ab0fde48324fef9b88939710fdc9fc5eaec9f1cda43fd7e250061",
+    "username": "YOUR_USERNAME",
+    "password": "YOUR_PASSWORD",
     "name": "teetime",
     "modelIndex": "className",
-    "connector": "cloudant"
+    "connector": "cloudant",
+    "plugin": "retry",
+    "retryAttempts": 5,
+    "retryTimeout": 1000
   }
 }
