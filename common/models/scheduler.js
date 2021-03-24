@@ -118,9 +118,13 @@ module.exports = function (Scheduler) {
                 jobs[id] = undefined; // remove this job from our list of active jobs
 
               }, function (err) {
+                console.log("Reservation.login failed:");
                 console.log(err);
               });
 
+          }, function(err) {
+            console.log("Reservation.findById failed:");
+            console.log(err);
           });
       },
       function () {
