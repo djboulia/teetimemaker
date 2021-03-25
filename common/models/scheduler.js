@@ -32,7 +32,7 @@ module.exports = function (Scheduler) {
    * keep a list of the active cron jobs so we can delete 
    * previously scheduled tee times
    */
-  var jobs = [];
+  const jobs = [];
 
   /**
    * book the tee time
@@ -42,19 +42,20 @@ module.exports = function (Scheduler) {
    * @param {Object} session holds a logged in session to use for reservation
    */
   var doReservation = function (time, id, session) {
-    var job = new CronJob(time, function () {
-        console.log("doReservation cron job running");
 
-        var Reservation = app.models.Reservation.Promise;
+    const reserveJob = new CronJob(time, function () {
+      console.log("doReservation cron job running");
 
-        Reservation.reserve(id, session)
-          .then(function (result) {
-              console.log(JSON.stringify(result));
-            },
-            function (err) {
-              console.log(err);
-            });
-      },
+      var Reservation = app.models.Reservation.Promise;
+
+      Reservation.reserve(id, session)
+        .then(function (result) {
+          console.log(JSON.stringify(result));
+        },
+          function (err) {
+            console.log(err);
+          });
+    },
       function () {
         /* This function is executed when the job stops */
       },
@@ -62,16 +63,23 @@ module.exports = function (Scheduler) {
       'America/New_York' /* Time zone of this job. */
     );
 
-    job.start();
+    reserveJob.start();
   };
 
   /**
-   * make the reservation at the specified date
-   * we do this in two steps: 
+   * make the reservation at the specified date. 
+   * we can log in to the tee sheet ahead of the tee sheet opening, but we
+   * can't make the reservation until the exact time.  If we
+   * log in as the tee sheet opens, we waste time logging in
+   * when we could be making the reservation.  So to avoid that
+   * we log in one minute ahead of time in one job, 
+   * then make the reservation as a second job.
+   * 
+   * the two cron jobs: 
    * 1) log in as the specified user one minute prior
    * 2) after login, make the reservation at the given time
    * 
-   * @param {Date} time the date and time to run this job
+   * @param {Date} time the date and time the tee sheet opens
    * @param {String} id model id for this reservation
    */
   var addJob = function (time, id) {
@@ -90,43 +98,41 @@ module.exports = function (Scheduler) {
       time = new Date(now + INTERVAL);
     }
 
-    var job = new CronJob(new Date(timeToLogin), function () {
-        const startTime = Date.now();
-        const Reservation = app.models.Reservation.Promise;
+    const loginJob = new CronJob(new Date(timeToLogin), function () {
+      console.log("login cron job running");
 
-        Reservation.findById(id)
-          .then(function (record) {
-            const result = record.data.result;
+      const startTime = Date.now();
+      const Reservation = app.models.Reservation.Promise;
 
-            Reservation.login(id)
-              .then(function (session) {
+      Reservation.login(id)
+        .then(function (session) {
 
-                const now = Date.now();
-                const elapsed = now - startTime;
+          const now = Date.now();
+          const elapsed = now - startTime;
 
-                if (elapsed >= INTERVAL) {
-                  // took us more than a minute to login, just trigger the reservation now
-                  time = new Date(now + ONE_SECOND); // run one second from now
-                  console.log("logged in, making reservation in 1 second.");
-                } else {
-                  const secsLeft = (INTERVAL - elapsed) / 1000;
-                  console.log("logged in, making reservation in " + secsLeft + " seconds.");
-                }
+          if (elapsed >= INTERVAL) {
+            // took us more than a minute to login, just trigger the reservation now
+            time = new Date(now + ONE_SECOND); // run one second from now
+            console.log("logged in, making reservation in 1 second.");
+          } else {
+            const secsLeft = (INTERVAL - elapsed) / 1000;
+            console.log("logged in, making reservation in " + secsLeft + " seconds.");
+          }
 
-                doReservation(time, id, session);
+          // use this logged in user's session as the context
+          // to make the reservation
 
-                jobs[id] = undefined; // remove this job from our list of active jobs
+          doReservation(time, id, session);
 
-              }, function (err) {
-                console.log("Reservation.login failed:");
-                console.log(err);
-              });
+          jobs[id] = undefined; // remove this job from our list of active jobs
 
-          }, function(err) {
-            console.log("Reservation.findById failed:");
-            console.log(err);
-          });
-      },
+        })
+        .catch((err) => {
+          console.log("Reservation.login failed:");
+          console.log(err);
+        });
+
+    },
       function () {
         // This function is executed when the job stops
       },
@@ -134,11 +140,11 @@ module.exports = function (Scheduler) {
       'America/New_York' // Time zone of this job.
     );
 
-    job.start();
+    loginJob.start();
 
     // keep track of started jobs so we can find them later
-    // if changes are made
-    jobs[id] = job;
+    // and cancel if changes are made
+    jobs[id] = loginJob;
   };
 
   /**
@@ -238,8 +244,8 @@ module.exports = function (Scheduler) {
             // wait for all of the promises to finish
             Promise.all(promises)
               .then(function (results) {
-                  resolve(results);
-                },
+                resolve(results);
+              },
                 function (err) {
                   console.log("error! " + err);
                   reject(err);
@@ -261,153 +267,153 @@ module.exports = function (Scheduler) {
    */
   Scheduler.remoteMethod(
     'create', {
-      http: {
-        path: '/',
-        verb: 'post',
-      },
-      description: 'Create a new reservation request',
+    http: {
+      path: '/',
+      verb: 'post',
+    },
+    description: 'Create a new reservation request',
 
-      accepts: [{
-          arg: 'time',
-          type: 'string',
-          required: true,
-          description: 'time to reserve. format: hh:mm [AM|PM] MM/DD/YYYY'
-        },
-        {
-          arg: 'courses',
-          type: 'array',
-          required: true,
-          description: 'array of course names, in order of preference.  Valid values: Highlands, Meadows, Fairways'
-        },
-        {
-          arg: 'golfers',
-          type: 'array',
-          required: true,
-          description: 'array of other golfers to add to the tee time. Max of three.'
-        },
-        {
-          arg: 'ctx',
-          type: 'string',
-          http: getAccessToken,
-          description: 'Do not supply this argument, it is automatically extracted ' +
-            'from request headers.',
-        }
-      ],
-
-      returns: {
-        arg: 'reservation',
-        type: 'object',
-        root: true
-      }
+    accepts: [{
+      arg: 'time',
+      type: 'string',
+      required: true,
+      description: 'time to reserve. format: hh:mm [AM|PM] MM/DD/YYYY'
+    },
+    {
+      arg: 'courses',
+      type: 'array',
+      required: true,
+      description: 'array of course names, in order of preference.  Valid values: Highlands, Meadows, Fairways'
+    },
+    {
+      arg: 'golfers',
+      type: 'array',
+      required: true,
+      description: 'array of other golfers to add to the tee time. Max of three.'
+    },
+    {
+      arg: 'ctx',
+      type: 'string',
+      http: getAccessToken,
+      description: 'Do not supply this argument, it is automatically extracted ' +
+        'from request headers.',
     }
+    ],
+
+    returns: {
+      arg: 'reservation',
+      type: 'object',
+      root: true
+    }
+  }
   );
 
   Scheduler.remoteMethod(
     'list', {
-      http: {
-        path: '/',
-        verb: 'get',
-      },
-      description: 'List the outstanding tee times yet to be scheduled for this user.',
+    http: {
+      path: '/',
+      verb: 'get',
+    },
+    description: 'List the outstanding tee times yet to be scheduled for this user.',
 
-      accepts: [{
-        arg: 'ctx',
-        type: 'string',
-        http: getAccessToken,
-        description: 'Do not supply this argument, it is automatically extracted ' +
-          'from request headers.',
-      }],
+    accepts: [{
+      arg: 'ctx',
+      type: 'string',
+      http: getAccessToken,
+      description: 'Do not supply this argument, it is automatically extracted ' +
+        'from request headers.',
+    }],
 
-      returns: {
-        arg: 'records',
-        type: 'array',
-        root: true
-      }
+    returns: {
+      arg: 'records',
+      type: 'array',
+      root: true
     }
+  }
   );
 
   Scheduler.remoteMethod(
     'get', {
-      http: {
-        path: '/:id',
-        verb: 'get',
-      },
-      description: 'Get the specified reservation.',
+    http: {
+      path: '/:id',
+      verb: 'get',
+    },
+    description: 'Get the specified reservation.',
 
-      accepts: [{
-          arg: 'id',
-          type: 'string',
-          required: true
-        },
-        {
-          arg: 'ctx',
-          type: 'string',
-          http: getAccessToken,
-          description: 'Do not supply this argument, it is automatically extracted ' +
-            'from request headers.',
-        }
-      ],
-
-      returns: {
-        arg: 'records',
-        type: 'array',
-        root: true
-      }
+    accepts: [{
+      arg: 'id',
+      type: 'string',
+      required: true
+    },
+    {
+      arg: 'ctx',
+      type: 'string',
+      http: getAccessToken,
+      description: 'Do not supply this argument, it is automatically extracted ' +
+        'from request headers.',
     }
+    ],
+
+    returns: {
+      arg: 'records',
+      type: 'array',
+      root: true
+    }
+  }
   );
 
   Scheduler.remoteMethod(
     'delete', {
-      http: {
-        path: '/:id',
-        verb: 'delete',
-      },
-      description: 'Remove the scheduled reservation.',
+    http: {
+      path: '/:id',
+      verb: 'delete',
+    },
+    description: 'Remove the scheduled reservation.',
 
-      accepts: [{
-          arg: 'id',
-          type: 'string',
-          required: true
-        },
-        {
-          arg: 'ctx',
-          type: 'string',
-          http: getAccessToken,
-          description: 'Do not supply this argument, it is automatically extracted ' +
-            'from request headers.',
-        }
-      ],
-
-      returns: {
-        arg: 'records',
-        type: 'array',
-        root: true
-      }
+    accepts: [{
+      arg: 'id',
+      type: 'string',
+      required: true
+    },
+    {
+      arg: 'ctx',
+      type: 'string',
+      http: getAccessToken,
+      description: 'Do not supply this argument, it is automatically extracted ' +
+        'from request headers.',
     }
+    ],
+
+    returns: {
+      arg: 'records',
+      type: 'array',
+      root: true
+    }
+  }
   );
 
   Scheduler.remoteMethod(
     'listHistory', {
-      http: {
-        path: '/history',
-        verb: 'get',
-      },
-      description: 'List the prior tee times for this user.',
+    http: {
+      path: '/history',
+      verb: 'get',
+    },
+    description: 'List the prior tee times for this user.',
 
-      accepts: [{
-        arg: 'ctx',
-        type: 'string',
-        http: getAccessToken,
-        description: 'Do not supply this argument, it is automatically extracted ' +
-          'from request headers.',
-      }],
+    accepts: [{
+      arg: 'ctx',
+      type: 'string',
+      http: getAccessToken,
+      description: 'Do not supply this argument, it is automatically extracted ' +
+        'from request headers.',
+    }],
 
-      returns: {
-        arg: 'records',
-        type: 'array',
-        root: true
-      }
+    returns: {
+      arg: 'records',
+      type: 'array',
+      root: true
     }
+  }
   );
 
 
@@ -452,14 +458,14 @@ module.exports = function (Scheduler) {
 
     Reservation.create(record)
       .then(function (result) {
-          scheduleTeeTime(result)
-            .then(function (str) {
-                cb(null, str);
-              },
-              function (err) {
-                cb(err);
-              });
-        },
+        scheduleTeeTime(result)
+          .then(function (str) {
+            cb(null, str);
+          },
+            function (err) {
+              cb(err);
+            });
+      },
         function (err) {
           cb(err);
         });
@@ -550,43 +556,43 @@ module.exports = function (Scheduler) {
     Reservation.findById(id)
       .then(function (record) {
 
-          if (!record || !record.data) {
-            var str = "Reservation with id " + id + " not found.";
-            cb(str);
-            return;
+        if (!record || !record.data) {
+          var str = "Reservation with id " + id + " not found.";
+          cb(str);
+          return;
+        }
+
+        if (record.data.member != memberId) {
+          var str = "This reservation not owned by the logged in member.";
+          cb(str);
+          return;
+        }
+
+        var teetime = new TeeTime(record);
+
+        if (!teetime.isTeeSheetOpen()) {
+          // tee time hasn't been booked yet, show reservation data
+          var data = {
+            id: record.id,
+            teetime: teetime.getDate().toString(),
+            scheduled: teetime.getTeeSheetOpenDate().toString(),
+            courses: record.data.courses,
+            golfers: record.data.golfers
           }
 
-          if (record.data.member != memberId) {
-            var str = "This reservation not owned by the logged in member.";
-            cb(str);
-            return;
+          cb(null, data);
+        } else {
+          // already processed record, show results
+          var data = {
+            id: record.id,
+            teetime: teetime.getDate().toString(),
+            courses: record.data.courses,
+            golfers: record.data.golfers,
+            result: record.data.result
           }
-
-          var teetime = new TeeTime(record);
-
-          if (!teetime.isTeeSheetOpen()) {
-            // tee time hasn't been booked yet, show reservation data
-            var data = {
-              id: record.id,
-              teetime: teetime.getDate().toString(),
-              scheduled: teetime.getTeeSheetOpenDate().toString(),
-              courses: record.data.courses,
-              golfers: record.data.golfers
-            }
-
-            cb(null, data);
-          } else {
-            // already processed record, show results
-            var data = {
-              id: record.id,
-              teetime: teetime.getDate().toString(),
-              courses: record.data.courses,
-              golfers: record.data.golfers,
-              result: record.data.result
-            }
-            cb(null, data);
-          }
-        },
+          cb(null, data);
+        }
+      },
         function (err) {
           cb(err);
         })
@@ -609,55 +615,55 @@ module.exports = function (Scheduler) {
     Reservation.findById(id)
       .then(function (record) {
 
-          if (!record || !record.data) {
-            var str = "Reservation with id " + id + " not found.";
-            cb(str);
-            return;
-          }
+        if (!record || !record.data) {
+          var str = "Reservation with id " + id + " not found.";
+          cb(str);
+          return;
+        }
 
-          if (record.data.member != memberId) {
-            var str = "This reservation not owned by the logged in member.";
-            cb(str);
-            return;
-          }
+        if (record.data.member != memberId) {
+          var str = "This reservation not owned by the logged in member.";
+          cb(str);
+          return;
+        }
 
-          // cancel the pending job
-          var job = jobs[id];
-          if (!job) {
-            var str = "No pending job found for id " + id;
-            cb(str);
-            return;
-          }
+        // cancel the pending job
+        var job = jobs[id];
+        if (!job) {
+          var str = "No pending job found for id " + id;
+          cb(str);
+          return;
+        }
 
-          if (!job.running) {
-            var str = "No running job for id " + id;
-            cb(str);
-            return;
-          }
+        if (!job.running) {
+          var str = "No running job for id " + id;
+          cb(str);
+          return;
+        }
 
-          job.stop();
+        job.stop();
 
-          if (job.running) {
-            var str = "Attempted to stop job, but still shows running for id " + id;
-            cb(str);
-            return;
-          } else {
-            console.log("Stopped job for id " + id);
-            jobs[id] = undefined;
-          }
+        if (job.running) {
+          var str = "Attempted to stop job, but still shows running for id " + id;
+          cb(str);
+          return;
+        } else {
+          console.log("Stopped job for id " + id);
+          jobs[id] = undefined;
+        }
 
-          // delete the specified record
-          Reservation.destroyById(id)
-            .then(function () {
-                var str = "Deleted scheduled job";
-                console.log(str);
-                cb(null, str);
-              },
-              function (err) {
-                cb(err);
-              })
+        // delete the specified record
+        Reservation.destroyById(id)
+          .then(function () {
+            var str = "Deleted scheduled job";
+            console.log(str);
+            cb(null, str);
+          },
+            function (err) {
+              cb(err);
+            })
 
-        },
+      },
         function (err) {
           cb(err);
         })
