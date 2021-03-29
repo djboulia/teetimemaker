@@ -123,6 +123,12 @@ module.exports = function (Reservation) {
     });
   };
 
+  /**
+   * login the user who made this reservation.
+   * 
+   * @param {String} id reservation identifier
+   * @returns logged in tee time session
+   */
   Reservation.Promise.login = function (id) {
 
     return new Promise(function (resolve, reject) {
@@ -137,15 +143,6 @@ module.exports = function (Reservation) {
                 .then(function (user) {
                   var userid = user.username;
                   var password = user.password;
-
-                  // build the remaining foursome members; 
-                  // logged in user is implied as first tee time
-                  var golfers = [];
-
-                  for (var i = 0; i < record.data.golfers.length; i++) {
-                    var golfer = record.data.golfers[i];
-                    golfers.push(golfer);
-                  }
 
                   var teeTimeAPI = new TeeTimeAPI();
 
@@ -186,6 +183,14 @@ module.exports = function (Reservation) {
   };
 
 
+  /**
+   * use this to actually book the tee time.  login first with the
+   * login method, then use the returned session to reserve the time
+   * 
+   * @param {String} id 
+   * @param {Object} teeTimeAPI 
+   * @returns 
+   */
   Reservation.Promise.reserve = function (id, teeTimeAPI) {
 
     return new Promise(function (resolve, reject) {
