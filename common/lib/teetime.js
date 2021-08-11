@@ -67,6 +67,10 @@ var TeeTime = function (reservation) {
       // Sat/Sun/Mon are a 3 day window, back up appropriately
       m.subtract(3, 'days');
 
+      // [05/12/2021] so much contention for the tee sheet due to COVID
+      //              try to CHEAT by a few ms to hit the optimal timing window
+      //              that gives us the tee sheet with minimal delay
+      // 
       // [10/13/2020] NEW tee time system.  7AM for weekends, 7:15AM weekdays
       //
       // [8/18/2020] changed this BACK to a single time for weekends
@@ -84,8 +88,11 @@ var TeeTime = function (reservation) {
 
       m.hours(7).minutes(0);
 
-      var date = new Date(m.utc().format());      
-      dates.push(new Date(date.getTime() + delta));
+      const CHEAT = 35; // go early by this number of ms. see comments above
+
+      var date = new Date(m.utc().format());    
+      var time = new Date(date.getTime() + delta - CHEAT);  
+      dates.push(time);
     }
 
 

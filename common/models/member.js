@@ -16,16 +16,15 @@ var newMemberRecord = function (username, password, info) {
   record.username = username;
   record.password = password;
 
-  if (!info || !info.teeSheetInfo) {
+  if (!info) {
     console.log("Warning! Invalid user info found" + JSON.stringify(info));
   }
 
   record.data = {};
   record.data.username = username;
   record.data.password = encryptedPassword;
-  record.data.info = info;
   record.data.name = info.name;
-  record.data.id = info.teeSheetInfo.user_name;
+  record.data.id = info.id;
 
   return record;
 };
@@ -45,9 +44,8 @@ var updateMemberRecord = function (record, username, password, info) {
 
   record.data.username = username;
   record.data.password = encryptedPassword;
-  record.data.info = info;
   record.data.name = info.name;
-  record.data.id = info.teeSheetInfo.user_name;
+  record.data.id = info.id;
 
   return record;
 };
