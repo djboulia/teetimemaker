@@ -86,6 +86,7 @@ var TeeTimeAPI = function () {
   const MEMBER_INFO_URL = MEMBER_BASE_URL + "info";
   const MEMBER_SEARCH_URL = MEMBER_BASE_URL + "search";
 
+  const TEETIME_CURRENTTIME_URL = TEETIME_BASE_URL + "currentTime";
   const TEETIME_SEARCH_URL = TEETIME_BASE_URL + "search";
   const TEETIME_RESERVE_URL = TEETIME_BASE_URL + "reserve";
   const TEETIME_RESERVEBYTIMESLOT_URL = TEETIME_BASE_URL + "reserveByTimeSlot";
@@ -248,6 +249,36 @@ var TeeTimeAPI = function () {
 
     return true;
   };
+
+  /**
+   * get current server time
+   */
+     this.currentTime = function () {
+      const self = this;
+  
+      console.log("currentTime fired at " + new Date().toString());
+    
+      return new Promise(function (resolve, reject) {
+        if (!loggedIn) {
+          reject("Not logged in!");
+          return;
+        }
+    
+        var url = self.buildTokenizedUrl(TEETIME_CURRENTTIME_URL)
+        var request = new JsonRequest(url);
+  
+        request.get(function (json) {
+          if (json) {
+            console.log(JSON.stringify(json));
+            resolve(json);
+          } else {
+            var str = "Error getting current time!";
+            console.log(str);
+            reject(str);
+          }
+        });
+      });
+    };
 
   /**
    * search for a tee time with the backend reservation system

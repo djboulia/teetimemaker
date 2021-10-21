@@ -107,24 +107,38 @@ module.exports = function (Scheduler) {
       Reservation.login(id)
         .then(function (session) {
 
-          const now = Date.now();
-          const elapsed = now - startTime;
+          Reservation.serverTime(session)
+            .then(function(obj) {
+              const serverTime = obj.ms;
 
-          if (elapsed >= INTERVAL) {
-            // took us more than a minute to login, just trigger the reservation now
-            time = new Date(now + ONE_SECOND); // run one second from now
-            console.log("logged in, making reservation in 1 second.");
-          } else {
-            const secsLeft = (INTERVAL - elapsed) / 1000;
-            console.log("logged in, making reservation in " + secsLeft + " seconds.");
-          }
+              let now = Date.now();
+              const serverDelta = serverTime - now;
 
-          // use this logged in user's session as the context
-          // to make the reservation
+              now = now + serverDelta;
+              const elapsed = now - startTime;
 
-          doReservation(time, id, session);
+              console.log('server time delta: ' + serverDelta )
 
-          jobs[id] = undefined; // remove this job from our list of active jobs
+              if (elapsed >= INTERVAL) {
+                // took us more than a minute to login, just trigger the reservation now
+                time = new Date(now + ONE_SECOND); // run one second from now
+                console.log("logged in, making reservation in 1 second.");
+              } else {
+                time = new Date(now + (INTERVAL - elapsed));
+                const secsLeft = (INTERVAL - elapsed) / 1000;
+                console.log("logged in, making reservation in " + secsLeft + " seconds.");
+              }
+    
+              // use this logged in user's session as the context
+              // to make the reservation
+    
+              doReservation(time, id, session);
+    
+              jobs[id] = undefined; // remove this job from our list of active jobs
+            })
+            .catch((e) => {
+              console.log(e);              
+            })
 
         })
         .catch((err) => {
